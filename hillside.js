@@ -72,13 +72,14 @@ const laterBeats={
  thornSeed:[0,-4,'step','가시덤불 스치는 소리','가시덤불 사이로 들어가기','가시 사이의 싹 살펴보기','field'],
  harvest:[0,-8,'step','이삭 스치는 소리','좋은 땅의 이삭으로 가기','열매 맺은 이삭 바라보기','field'],
  returnLake:[0,-8,'water','멀리 들리는 물소리','비유 속 들판 · 호숫가의 물소리 듣기','호숫가로 돌아가기','field'],
- hillEnd:[0,-3.8,'call','배에서 들려오는 목소리','3장 끝 · 호숫가에서 쉬기','여행 수첩 펼치기','shore']
+ hillEnd:[0,-3.8,'call','배에서 들려오는 목소리','3장 끝 · 호숫가의 배로 가기','배에 올라 건너편으로','shore']
 };
 function syncLater(){
  const b=laterBeats[save.chapterStep];
  for(const [key,set] of Object.entries(laterSets))set.visible=b?.[6]===key;
  document.body.classList.toggle('parable',b?.[6]==='field');
  if(!b)return false;
+ if(isFourth())return syncFourth(b);
  const area=b[6];
  scene.background.set({meal:0xedc69e,hill:0xc3d9bf,shore:0xb7d8d5,field:0xe3ce99}[area]);
  document.querySelector('header small').textContent=area==='meal'?'가버나움 · 제2장':area==='field'?'제3장 · 예수님이 들려주신 비유':'갈릴리 · 제3장';
@@ -92,12 +93,14 @@ function chapterSounds(){
 }
 function laterBlocked(x,z){
  const area=laterBeats[save.chapterStep][6];
+ if(isFourth())return fourthBlocked(x,z);
  if(area==='field')return Math.abs(x)>6||z>5.95||z< -9.95;
  if(Math.abs(x)>6.6||z>7.8||z<(area==='hill'?-7:-5.2))return true;
  return area==='meal'&&Math.abs(x)<2.2&&Math.abs(z+3.2)<.94;
 }
 function updateLater(dt){
  const s=save.chapterStep,b=laterBeats[s],p=sheep.position,area=b[6];
+ if(isFourth()){updateFourth(dt);return}
  p.y=area==='hill'?hillHeight(p.z):0;
  const altSeat=s==='seat'&&distance(-3,-1.5)<1.65;
  const besideChild=s==='climb'&&!save.hillChild&&distance(4.5,3.7)<1.65;
@@ -121,6 +124,7 @@ function updateLater(dt){
 }
 function laterAction(){
  const s=save.chapterStep,b=laterBeats[s];
+ if(isFourth()){fourthAction();return}
  if(s==='climb'&&!save.hillChild&&distance(4.5,3.7)<1.65){
  save.hillChild=true;pose='sit';poseEnd=clock+2;checkpoint();caption('보리가 턱을 기대자 아이는 울음을 그치고 천천히 함께 언덕을 오른다.',4);return}
  const left=s==='seat'&&distance(-3,-1.5)<1.65;
@@ -139,15 +143,15 @@ function laterAction(){
  case 'thornSeed':enterBeat('harvest');caption('함께 자란 가시덤불이 기운을 막아 열매를 맺지 못한다.',4);break;
  case 'harvest':enterBeat('returnLake');caption('좋은 땅에 떨어진 씨는 자라서 서른 배, 예순 배, 백 배의 열매를 맺는다.',5);poseEnd=clock+2;break;
  case 'returnLake':enterBeat('hillEnd',[0,0,-3.7]);caption('다시 호숫가. 좋은 땅은 말씀을 듣고 받아들여 열매 맺는 이들을 가리킨다.　막 4:13–20',7);break;
- case 'hillEnd':journal();break;
+ case 'hillEnd':enterBeat('boarding',[0,0,3.6]);caption('저녁이 되어 예수님과 제자들이 건너편을 향해 떠난다.　막 4:35–36',5);break;
  }
 }
 function appendLaterRecord(refs){
  const b=laterBeats[save.chapterStep];if(!b)return;
  if(save.tableSeat){refs.append(' 예수님은 레위를 부르시고 세리들과 식사하셨다(막 2:13–17).');
  by('memory').lastElementChild.append(save.tableSeat==='court'?' 보리는 레위의 집 왼쪽 안뜰에 누웠다.':' 보리는 장사꾼이 놓아 준 물그릇 옆에 누웠다.');}
- if(['lake','boatTalk','pathSeed','stoneSeed','thornSeed','harvest','returnLake','hillEnd'].includes(save.chapterStep)){
+ if(isFourth()||['lake','boatTalk','pathSeed','stoneSeed','thornSeed','harvest','returnLake','hillEnd'].includes(save.chapterStep)){
  refs.append(' 산에서 팔복과 들꽃에 관해 가르치셨다(마 5:1–12, 6:25–34).');by('memory').lastElementChild.append(save.hillChild?' 아이와 함께 비탈에 앉았다.':' 보리는 언덕 위로 곧장 올라갔다.');}
- if(save.chapterStep==='hillEnd')refs.append(' 호숫가에서 씨 뿌리는 사람의 비유를 들려주셨다(막 4:1–20).');
+ if(isFourth())appendFourthRecord(refs);
+ if(isFourth()||save.chapterStep==='hillEnd')refs.append(' 호숫가에서 씨 뿌리는 사람의 비유를 들려주셨다(막 4:1–20).');
 }
-syncChapter();
