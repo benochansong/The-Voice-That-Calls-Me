@@ -75,16 +75,27 @@ for(let s of [-1,1]){
 oval(sheep,cream,0,.61,.56,.14,.14,.15);
 const by=id=>document.getElementById(id);
 const prologuePreview=location.hash==='#nativity-preview';
+// The replay checkpoint belongs to this tab's history entry, never to the campaign slot.
+const chapterReplay=location.hash==='#chapter-replay'?history.state?.boriReplay:null;
+const replaying=prologuePreview||Boolean(chapterReplay);
 const fresh=()=>({drank:false,child:false,done:false,x:0,z:8,prologue:'watchFlock'});
 let save=fresh(),prefs={mute:false,toggle:false};
 try{
  const previous=JSON.parse(localStorage.getItem('boriJourney'));
  // Older saves already belong to the market or a later chapter, including undrunk market saves.
- if(!prologuePreview&&previous&&typeof previous==='object')save=Object.assign({drank:false,child:false,done:false,x:0,z:17},previous);
+ if(!replaying&&previous&&typeof previous==='object')save=Object.assign({drank:false,child:false,done:false,x:0,z:17},previous);
 }catch{}
 try{Object.assign(prefs,JSON.parse(localStorage.boriPrefs||'{}'))}catch{}
+if(replaying&&history.state?.boriReplay?.checkpoint)save={...history.state.boriReplay.checkpoint};
 sheep.position.set(save.x,0,save.z);
-function checkpoint(){if(prologuePreview)return;save.x=sheep.position.x;save.z=sheep.position.z;try{localStorage.boriJourney=JSON.stringify(save)}catch{}}
+function checkpoint(){
+ save.x=sheep.position.x;save.z=sheep.position.z;
+ if(replaying){
+  history.replaceState({boriReplay:{chapter:chapterReplay?.chapter||0,checkpoint:save}},'');
+  return;
+ }
+ try{localStorage.boriJourney=JSON.stringify(save)}catch{}
+}
 function settings(){prefs={mute:by('mute').checked,toggle:by('toggle').checked};try{localStorage.boriPrefs=JSON.stringify(prefs)}catch{}if(prefs.mute)window.speechSynthesis?.cancel()}
 for(let key of ['mute','toggle']){by(key).checked=prefs[key];by(key).onchange=settings}
 let yaw=0,keys=new Set(),listen=false,drag=false,audio,clock=0,nextTone=0,sayUntil=0,pose='',poseEnd=0,sceneTime=-1,sellerSeen=false,camReady=false;
@@ -100,9 +111,9 @@ function ping(type,side,level){
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(audio.destination);osc.start(t);osc.stop(t+.38);
 }
 function journal(){keys.clear();listen=false;
- by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();by('book').showModal()}
+ by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();prepareChapterMenu();by('book').showModal();by('book').scrollTop=0}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
-by('restart').onclick=()=>{if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
+by('restart').onclick=()=>{if(replaying)return;if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
 const distance=(x,z)=>Math.hypot(sheep.position.x-x,sheep.position.z-z);
 function action(){
  if(by('book').open||clock<poseEnd||sceneTime>=0)return;
@@ -173,6 +184,7 @@ function loop(now){
  by('place').textContent=p.z< -10?'갈릴리 호숫가':p.z<1?'아이의 골목':'가버나움 장터';
  by('hint').textContent=save.done?'E · 시몬의 집으로 동행하기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
  if(save.chapterStep)updateChapter(dt);
+ if(chapterReplay)showReplayExitHint();
  const focus=new T.Vector3(p.x,p.y+.85,p.z);
  const viewYaw=sceneTime>=0?0:yaw;
  let target=focus.clone();

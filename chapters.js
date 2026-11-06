@@ -60,6 +60,7 @@ const beats={
 const inCourt=()=>['bedside','recovery','aside','evening'].includes(save.chapterStep);
 let beatTime=0;
 function enterBeat(step,spawn){
+ if(chapterReplay&&chapterForStep(step)!==chapterReplay.chapter){restoreMainJournal();return}
  save.chapterStep=step;beatTime=0;
  if(spawn){sheep.position.set(...spawn);yaw=0;camReady=false}
  checkpoint();syncChapter();

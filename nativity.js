@@ -122,7 +122,7 @@ function startNativity(){
  nativitySet=buildNativity();showMarketSet(false);
  document.querySelector('header small').textContent='베들레헴 · 탄생 서막';
  by('keys').textContent='WASD 이동　Shift 달리기　드래그 / ← → 둘러보기　Q 귀 기울이기　E 행동';
- if(!prologuePreview)checkpoint();
+ checkpoint();
 }
 function nextNativity(step){
  save.prologue=step;nativityTime=0;lastNativityLine=-1;listen=false;checkpoint();
@@ -210,7 +210,7 @@ function updateNativity(dt,moving){
  if(s==='acrossYears'&&t>=6.4)finishNativity();
 }
 function appendNativityRecord(){
- const replay=by('nativityReplay');replay.hidden=!!save.prologue;
+ const replay=by('nativityReplay');replay.hidden=!!save.prologue||Boolean(chapterReplay);
  if(prologuePreview){by('restart').hidden=true;replay.hidden=false;replay.textContent='원래 여정으로 돌아가기'}
  if(save.nativitySeen||save.prologue==='holdMemory'||save.prologue==='acrossYears'){
   const p=document.createElement('p');p.textContent='탄생 서막 · 목자들이 천사의 소식을 듣고 베들레헴으로 가서 구유에 누운 아기 예수님을 만났다(누가복음 2:1–20).';

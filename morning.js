@@ -150,7 +150,7 @@ function updateEighth(dt){
 }
 function eighthAction(){
  const s=save.chapterStep,b=eighth[s];
- if(s==='credits'){journal();return}
+ if(s==='credits'){if(chapterReplay)restoreMainJournal();else journal();return}
  const boatSide=s==='lastRest'&&distance(3.8,-3.2)<1.4;
  if(!boatSide&&distance(b[0],b[1])>=1.4)return;
  switch(s){
