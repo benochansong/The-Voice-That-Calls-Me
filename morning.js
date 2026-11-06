@@ -48,12 +48,21 @@ const morningBoat=new T.Group();breakfastBeach.add(morningBoat);morningBoat.posi
 morningBoat.add(buildStorySkiff(4.55,2.22));morningBoat.rotation.y=-.68;
 for(let i=0;i<7;i++)oval(breakfastBeach,0x69554a,-2.65+.4*Math.cos(i*.9),.12,-1.4+.4*Math.sin(i*.9),.22,.15,.19);
 const ember=oval(breakfastBeach,0xefaa69,-2.65,.22,-1.4,.31,.15,.24);
-const bread8=oval(breakfastBeach,0xc49762,-2.05,.35,-1.55,.28,.12,.2);
-const fish8=oval(breakfastBeach,0x8c9b96,-2.68,.36,-1.4,.14,.09,.32);
+const bread8=sharingLoaf(breakfastBeach,-2.05,.35,-1.55,.25,.087,.16);
+const fish8=sharingFish(breakfastBeach,-2.68,.36,-1.4,.58);
 const host8=actor(breakfastBeach,-2.1,-2.2,linen),peter8=actor(breakfastBeach,2.7,-4.6,0x788a80);
+const shoreGuest=actor(breakfastBeach,-3.04,-2.24,0xa78069);
+// A plank on two low stones by the coals supports the food before and after each handoff.
+for(let x of [-3.05,-1.22])oval(breakfastBeach,0xa19880,x,.23,-1.86,.29,.38,.30);
+cube(breakfastBeach,wood,-2.1,.62,-1.86,2.70,.09,.54);
+sharingFish(breakfastBeach,-2.66,.36,-1.35,.56);
+const shoreService=new SharedMeal(host8,[
+ {prop:bread8,receiver:peter8,hand:'left',source:[-1.89,.751,-1.90],place:[-1.17,.751,-1.88],start:.06,duration:4.05,margin:.17,height:.071},
+ {prop:fish8,receiver:shoreGuest,hand:'right',source:[-2.36,.741,-1.87],place:[-3.04,.741,-1.87],start:4.08,duration:4.38,margin:.108,height:.055}
+]);
 // Leave the near side of the breakfast circle open for the lamb.
 for(let i=0;i<5;i++){
- const angle=-.48+i*.91,x=-2.65+2.05*Math.cos(angle),z=-1.4-1.76*Math.sin(angle);
+ const angle=.72+i*.55,x=-2.65+2.55*Math.cos(angle),z=-1.4-2.45*Math.sin(angle);
  const disciple=actor(breakfastBeach,x,z,[0x978879,0xaf936e,0x80988a][i%3],.85+i%3*.035);
  disciple.rotation.y=Math.atan2(-2.65-x,-1.4-z);
 }
@@ -145,16 +154,17 @@ function updateEighth(dt){
  morningBoat.rotation.z=Math.sin(clock*1.3)*.018;
  waveTips.forEach((w,i)=>w.position.y=-.12+Math.sin(clock*1.2+i)*.035);
  ember.scale.y=.14+.025*Math.sin(clock*4);
- const seated=s==='charcoal'||s==='mealMorning',talk=['threeCalls','lastRest','credits'].includes(s);
- const near=talk?1:s==='peterWalk'?unit(t/3):0;
+ const talk=['threeCalls','lastRest','credits'].includes(s);
+ const near=talk?1:s==='peterWalk'?T.MathUtils.smootherstep(t,0,3):0;
+ const landing=s==='netMorning'?0:s==='charcoal'?T.MathUtils.smootherstep(t,0,2.7):1;
  host8.position.set(-2.1+near*2.9,0,-2.2-near*2.2);
- peter8.position.set(s==='netMorning'?2.7:-1.15+near*3,0,s==='netMorning'?-4.6:-2.6-near*1.8);
- host8.rotation.y=softTurn(host8.rotation.y,Math.atan2(peter8.position.x-host8.position.x,peter8.position.z-host8.position.z),dt,3);
- peter8.rotation.y=softTurn(peter8.rotation.y,Math.atan2(host8.position.x-peter8.position.x,host8.position.z-peter8.position.z),dt,3);
- peter8.scale.y=seated?.74:.96;
- const serving=s==='mealMorning'?unit((t-4)/2):0;
- bread8.position.set(-2.05+serving*.74,.35+serving*.5,-1.55-serving*.8);
- fish8.position.set(-2.68+serving*.95,.36+serving*.48,-1.4-serving*.82);
+ peter8.position.set(2.7-landing*3.86+near*3,0,-4.6+landing*2.36-near*2.15);
+ host8.scale.y=.87+.13*near;peter8.scale.y=.87+.13*(1-landing+near);
+ const mealYaw=s==='mealMorning'?.52-1.04*T.MathUtils.smootherstep(t,3.7,4.8):.52;
+ host8.rotation.y=softTurn(host8.rotation.y,near>.02?Math.atan2(peter8.position.x-host8.position.x,peter8.position.z-host8.position.z):mealYaw,dt,5);
+ peter8.rotation.y=softTurn(peter8.rotation.y,near>.02?Math.atan2(host8.position.x-peter8.position.x,host8.position.z-peter8.position.z):-.58,dt,5);
+ shoreGuest.rotation.y=.55;
+ shoreService.animate(dt,s==='mealMorning'?t:talk||s==='peterWalk'?9:0);
  if(s==='mealMorning'&&t>=9)enterBeat('peterWalk');
  if(s==='threeCalls'&&t>=21){enterBeat('lastRest');caption('배 곁에서는 그물이 마르고, 식탁 곁에는 아직 불씨가 남아 있다.',5)}
  if(s==='credits'){

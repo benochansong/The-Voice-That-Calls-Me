@@ -66,8 +66,8 @@ function buildNativity(){
  }
  function herder(x,z,color){
   const figure=actor(field,x,z,color);
-  cube(figure,wood,.38,.98,.13,.055,1.95,.055);
-  oval(figure,0xbba78c,0,1.74,0,.28,.15,.26);
+  bindPersonAccessory(figure,cube(figure,wood,.38,.98,.13,.055,1.95,.055),'left');
+  bindPersonAccessory(figure,oval(figure,0xbba78c,0,1.74,0,.28,.15,.26),'head');
   return figure;
  }
  const player=herder(0,8,0x8b7761);

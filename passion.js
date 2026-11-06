@@ -41,13 +41,23 @@ cube(upper,wood,0,.8,-3.25,4.8,.2,1.5);
 for(let x of [-2,2])cube(upper,wood,x,.4,-3.25,.22,.8,1);
 const aTeacher=actor(upper,0,-.8,linen);
 const guests7=[];
-for(let i=0;i<7;i++)guests7.push(actor(upper,-2.5+i*.8,-4.35,[0x879382,0xb18b6a,0xac8d89][i%3]));
+const supperSeats=[[-2.79,-3.43],[-2.23,-4.29],[-1.31,-4.48],[-.37,-4.38],[.64,-4.50],[1.62,-4.32],[2.67,-3.69]];
+for(const [i,[x,z]] of supperSeats.entries()){
+ const guest=actor(upper,x,z,[0x879382,0xb18b6a,0xac8d89][i%3],.90+i%3*.042);
+ guest.rotation.y=Math.atan2(-x,-2.25-z);guests7.push(guest);
+}
 const washed=actor(upper,-.72,-1.12,0x8a927e);
 const basin=oval(upper,wood,-.53,.18,-.68,.43,.16,.31);
 oval(upper,water,-.53,.29,-.68,.37,.045,.25);
 const towel=cube(upper,linen,0,.45,-.66,.18,.48,.1);
-const sharedBread=oval(upper,0xc49560,0,.98,-2.7,.31,.1,.19);
+const sharedBread=sharingLoaf(upper,0,.98,-2.7,.255,.085,.17);
 const cup=part(upper,new T.CylinderGeometry(.135,.075,.22,9),clay,.55,1.01,-2.7,1,1,1);
+// The teacher and two guests share the near rim. Bori can watch from either side.
+const cupGuest=actor(upper,.99,-2.24,0x978468);
+const supperService=new SharedMeal(aTeacher,[
+ {prop:sharedBread,receiver:washed,hand:'right',source:[-.25,.985,-2.62],place:[-1.05,.985,-2.65],start:.08,duration:4.20,margin:.173,height:.066},
+ {prop:cup,receiver:cupGuest,hand:'left',source:[.29,1.015,-2.65],place:[1.04,1.015,-2.65],start:4.18,duration:4.55,margin:.082,height:.02}
+]);
 for(let i=0;i<12;i++){
  const x=(i%2?1:-1)*(3.5+i%3),z=5-Math.floor(i/2)*2.2;
  cube(olives,wood,x,1.27,z,.43,2.5,.47).rotation.z=.12*Math.cos(i);
@@ -57,7 +67,13 @@ const praying=actor(olives,-.5,-3.8,linen);
 const sleepers=[actor(olives,-2.9,-.65,0x938670),actor(olives,2,-.5,0x758b78),actor(olives,2.8,-.9,0xb3987c)];
 const arrestParty=[];
 for(let i=0;i<4;i++){const a=actor(olives,i*.65-1,-6.2,i===0?0x977d61:0x737878);
- if(i){cube(a,wood,.34,1.38,0,.075,.8,.075);oval(a,0xf0b170,.34,1.85,0,.11,.24,.11)}arrestParty.push(a)}
+ if(i){
+  const torch=new T.Group();a.add(torch);
+  cube(torch,wood,.30,1.03,.14,.075,.81,.075);oval(torch,0xf0b170,.30,1.51,.14,.11,.24,.11);
+  bindPersonAccessory(a,torch,'left');
+ }
+ arrestParty.push(a);
+}
 const flame7=oval(fireside,0xea9853,-.55,.4,-.3,.36,.5,.32);
 for(let i=0;i<8;i++)oval(fireside,0x7e7464,-.55+Math.cos(i*.79)*.55,.1,-.3+Math.sin(i*.79)*.55,.16,.13,.16);
 const peter7=actor(fireside,1,-.9,0x788a80);
@@ -105,11 +121,16 @@ function updateSeventh(dt){
  by('hint').textContent=brief?'E · 수난 짧게 보기':edge?'E · 문간에서 마지막 식사 바라보기':b[5]&&distance(b[0],b[1])<1.45?'E · '+b[5]:b[4];
  if(s==='briefPassion'){if(by('caption').textContent!==briefText)caption(briefText,Infinity);shroud.visible=false;joseph.visible=false;burialStone.position.x=.08;return}
  if(area==='upper'){
- const wash=s==='upperDoor'||s==='washFeet';aTeacher.position.set(wash?-.05:0,0,wash?-.85:-2.25);
- aTeacher.scale.y=wash?.58:.87;towel.visible=wash;towel.position.y=.43+(s==='washFeet'?Math.sin(t*2)*.07:0);
- const giving=s==='lastMeal',progress=giving?unit((t-1)/2):0;
- sharedBread.position.set(-progress*.9,.99+progress*.12,-2.65-progress*.5);
- cup.position.set(.55+(giving?unit((t-4)/2):0)*.9,1.01,-2.7);
+ const wash=s==='upperDoor'||s==='washFeet',giving=s==='lastMeal';
+ const settle=wash?0:s==='mealPlace'?T.MathUtils.smootherstep(t,0,1.1):1;
+ aTeacher.position.set(-.05*(1-settle),0,-.85-1.39*settle);
+ aTeacher.scale.y=.58+.38*settle;
+ aTeacher.rotation.y=giving?-.48+.96*T.MathUtils.smootherstep(t,3.85,4.85):-.48*settle;
+ washed.position.set(-.72-.25*settle,0,-1.12-1.12*settle);washed.rotation.y=.58*settle;
+ cupGuest.rotation.y=-.58;towel.visible=wash;towel.position.y=.43+(s==='washFeet'?Math.sin(t*2)*.07:0);
+ supperService.animate(dt,giving?t:s==='gardenDoor'?10:0);
+ const focus=wash?towel.position:giving&&t>4.1?cup.position:sharedBread.position;
+ for(const guest of guests7)animatePerson(guest,dt,{lookAt:focus,sit:.72});
  if(s==='washFeet'&&t>6){enterBeat('mealPlace');caption('예수님이 제자들의 발을 씻기시고 서로의 발을 씻어 주라고 가르치신다.　요 13:1–17',6)}
  if(giving&&t-dt<4&&t>=4)caption('예수님이 잔도 건네시며 제자들을 위해 흘리는 피로 세우는 새 언약을 말씀하신다.',6);
  if(giving&&t>10){enterBeat('gardenDoor');caption('식사가 끝난 뒤, 사람들의 발걸음이 동산을 향한다.',4)}

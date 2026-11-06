@@ -19,7 +19,7 @@ room(courtyard);room(roofSet);
 const mother=actor(courtyard,-1.4,-2.6,0x95666b),healer=actor(courtyard,-.9,-3.35,linen);
 cube(courtyard,wood,-1.4,.24,-2.6,2,.45,1);
 const bearer=actor(courtyard,0,-.5,0x648279);
-oval(bearer,clay,.34,1,.2,.22,.31,.22);
+bindPersonAccessory(bearer,oval(bearer,clay,.34,1,.2,.22,.31,.22),'left');
 cube(courtyard,wood,-3,.55,-4.6,2.2,.14,1);
 for(let x of [-3.8,-2.2])cube(courtyard,wood,x,.25,-4.6,.12,.5,.65);
 for(let j=0;j<3;j++)oval(courtyard,0xb88748,-3.6+j*.6,.7,-4.6,.2,.09,.16);

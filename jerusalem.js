@@ -31,12 +31,14 @@ for(let i=0;i<9;i++){
 }
 const colt=donkey.clone();gates.add(colt);
 const rider=actor(gates,0,0,linen);
-const worshippers=[];
+const worshippers=[],gateBystanders=[];
 for(let i=0;i<16;i++){
  const side=i%2?1:-1,z=5-Math.floor(i/2)*1.4;
- const person=actor(gates,side*(3.7+(i%3)*.27),z,[0x9e7862,0x788f7e,0xb09974][i%3]);
+ const roadEdge=i===2||i===3||i===8||i===9;
+ const person=actor(gates,side*(roadEdge?2.95:3.7+(i%3)*.27),z,[0x9e7862,0x788f7e,0xb09974][i%3]);
  person.rotation.y=-side*Math.PI/2;
- const arm=cube(person,0xc09371,.26,1.4,.18,.12,.48,.14);worshippers.push(arm);
+ worshippers.push(person);
+ if(roadEdge)gateBystanders.push(createPassingNeighbor(person,side));
 }
 for(let i=0;i<7;i++)cube(gates,[0xa56d5d,0x708b87,0xc0a779][i%3],Math.sin(i)*.35,.015,3.5-i*1.35,1.65,.035,1.1).rotation.y=Math.sin(i)*.24;
 cube(court6,0xdac8a9,0,-.22,0,38,.44,30);
@@ -74,7 +76,7 @@ function syncSixth(b){
 function sixthBlocked(x,z){
  const area=sixth[save.chapterStep][6];
  if(Math.abs(x)>4.85||z>7.8||z< -7.15)return true;
- if(area==='gates')return z< -6.4&&Math.abs(x)>2;
+ if(area==='gates')return (z< -6.4&&Math.abs(x)>2)||gateBystanders.some(n=>passingNeighborBlocks(n,x,z,sheep.position));
  if(area==='court6')return Math.abs(x+2.9)<.73&&Math.abs(z+1.35)<.62;
  return Math.abs(x)<2.38&&Math.abs(z+2.9)<.8;
 }
@@ -82,6 +84,7 @@ function sixthSounds(){
  if(save.chapterStep==='procession')return [chapterCue(),[-3,-1.3,'call','길 가장자리의 찬양']];
  return [chapterCue()];
 }
+const gateGreetings=new THREE.Vector3(),gateAttention=new THREE.Vector3();
 function updateSixth(dt){
  const s=save.chapterStep,b=sixth[s],t=beatTime,p=sheep.position;
  p.y=0;const edge=s==='procession'&&distance(-3,-1.3)<1.35;
@@ -90,7 +93,14 @@ function updateSixth(dt){
  if(b[6]==='gates'){
  const z=s==='ridge'?3.25:s==='procession'?Math.max(-2.1,Math.min(3.25,p.z-1)):Math.max(-6.75,Math.min(-2.1,p.z-1));
  colt.position.set(.55,.06,z);rider.position.set(.55,1.05,z+.08);rider.scale.y=.79;
- worshippers.forEach((arm,i)=>arm.rotation.x=-.55+Math.sin(clock*2+i)*.33);
+ for(const neighbor of gateBystanders)stepPassingNeighbor(neighbor,dt,p);
+ worshippers.forEach((person,i)=>{
+  if(personPosedThisFrame(person)||Math.abs(person.position.z-z)>3.2)return;
+  person.localToWorld(gateGreetings.set(-.32,1.49+.09*Math.sin(clock*2+i),.28));
+  if(distance(person.position.x,person.position.z)<2.1)gateAttention.set(p.x,p.y+.82,p.z);
+  else gateAttention.set(rider.position.x,rider.position.y+1.2,rider.position.z);
+  animatePerson(person,dt,{lookAt:gateAttention,reachRight:gateGreetings});
+ });
  return;
  }
  if(b[6]==='court6'){

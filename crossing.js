@@ -49,8 +49,18 @@ for(let i=0;i<40;i++){
  actor(meadow,x,z,[0x899179,0xbc9477,0x9b8979,0x81949a][(col+row)%4],.8).scale.y=.52;
 }
 const loaves=[],fish=[],fragments=[];
-for(let i=0;i<5;i++)loaves.push(oval(meadow,0xc18a47,-.65+i*.29,.25,-5.8,.17,.13,.23));
-for(let i=0;i<2;i++)fish.push(oval(meadow,0x77999d,.55+i*.28,.21,-5.5,.12,.08,.27));
+for(let i=0;i<5;i++)loaves.push(sharingLoaf(meadow,-.65+i*.29,.25,-5.8,.19,.105,.15));
+for(let i=0;i<2;i++)fish.push(sharingFish(meadow,.55+i*.28,.21,-5.5,.51));
+// Carry the food in two shallow baskets. The first loaf and fish leave these
+// baskets and stay with the actual hands of the disciples walking to the crowd.
+breadBasket(meadow,-.44,-5.86);breadBasket(meadow,.49,-5.84);
+for(let i=0;i<loaves.length;i++)loaves[i].position.set(-.67+i%3*.21,.819+Math.floor(i/3)*.065,-5.92+i%2*.14);
+fish[0].position.set(.32,.791,-5.82);fish[1].position.set(.57,.791,-5.91);
+const meadowService=new SharedMeal(host,[
+ {prop:loaves[2],receiver:servers[0],hand:'right',source:[-.32,.84,-5.82],start:.06,duration:2.5,margin:.073,height:.09},
+ {prop:fish[0],receiver:servers[1],hand:'left',source:[.32,.812,-5.82],start:.26,duration:2.72,margin:.066,height:.058}
+]);
+let distributionTime=0,lastDistributionStep='';
 for(let i=0;i<12;i++){
  const x=(i%6-2.5)*.75,z=4.7+Math.floor(i/6)*.68;
  part(meadow,new T.CylinderGeometry(.28,.18,.34,9),0xa27c4d,x,.17,z,1,1,1);
@@ -111,10 +121,18 @@ function updateFourth(dt){
  a.position.x+=(x-a.position.x)*Math.min(1,dt*2.8);a.position.z+=(z-a.position.z)*Math.min(1,dt*2.8);
  a.scale.y=arrived?.54:i?.71:1;
  });
- const distributed=['sharing','baskets','fourthEnd'].includes(s);
- servers.forEach((a,i)=>{const t=s==='sharing'?Math.min(1,beatTime/4):distributed?1:0;
- a.position.set((i?1:-1)*(1+2*t),0,-5.4+4.4*t)});
- loaves.concat(fish).forEach((food,i)=>{food.position.z=distributed?servers[i%2].position.z+.22:-5.8+(i>=5?.3:0);food.position.x=distributed?servers[i%2].position.x+(i%3-1)*.16:i<5?-.65+i*.29:.55+(i-5)*.28;food.position.y=distributed?.88:.25});
+ if(s==='sharing')distributionTime=beatTime;
+ else if(s==='baskets'||s==='fourthEnd')distributionTime=['sharing','baskets','fourthEnd'].includes(lastDistributionStep)?distributionTime+dt:8;
+ else distributionTime=0;
+ lastDistributionStep=s;
+ const road=T.MathUtils.smootherstep(distributionTime,3,7);
+ const speed=Math.hypot(2.08,4.93)*(road-T.MathUtils.smootherstep(distributionTime-dt,3,7))/dt;
+ servers.forEach((a,i)=>{
+  const side=i?1:-1;
+  a.position.set(side*(.92+2.08*road),0,-6.03+4.93*road);
+  a.rotation.y=side*(-.5+.9*T.MathUtils.smootherstep(distributionTime,2.95,4));
+ });
+ meadowService.animate(dt,distributionTime,speed);
  fragments.forEach(f=>f.visible=s==='baskets'||s==='fourthEnd');
 }
 function wakeDisciples(){enterBeat('hush');caption('겁에 질린 제자들이 고물에서 주무시던 예수님을 깨운다.',4)}

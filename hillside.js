@@ -22,9 +22,13 @@ function hillHeight(z){return (8-z)*.23}
 const slope=cube(hill,0x9eaa73,0,hillHeight(0)-.25,0,32,.48,30);
 slope.rotation.x=Math.atan(.23);
 function hillsideActor(x,z,color,size){const a=actor(hill,x,z,color,size);a.position.y=hillHeight(z);return a}
-hillsideActor(0,-6.1,linen,1.08);
+const mountTeacher=hillsideActor(0,-6.1,linen,1.08);
 const little=hillsideActor(4.5,3.7,0xc59a61,.73);
-for(let i=0;i<13;i++){const x=(i%2?1:-1)*(2+i%4*.8),z=-4+(i%5)*1.15;hillsideActor(x,z,0x807f64+i*0x030202,.86)}
+for(let i=0;i<13;i++){
+ const x=(i%2?1:-1)*(2+i%4*.8),z=-4+(i%5)*1.15;
+ const listener=hillsideActor(x,z,0x807f64+i*0x030202,.86);
+ listener.rotation.y=Math.atan2(-x,mountTeacher.position.z-z);
+}
 for(let i=0;i<54;i++){
  const x=Math.sin(i*3.31)*7,z=Math.cos(i*1.21)*6,y=hillHeight(z);
  cube(hill,0x708551,x,y+.14,z,.035,.31,.035);
@@ -33,7 +37,7 @@ for(let i=0;i<54;i++){
 cube(shore,0xd9bf94,0,-.21,4,36,.4,20);
 cube(shore,water,0,-.27,-20,90,.4,30);
 const skiff=buildStorySkiff(4.4,2.45);skiff.position.set(0,-.04,-6.9);shore.add(skiff);
-actor(shore,0,-6.9,linen).position.y=.4;
+const boatTeacher=actor(shore,0,-6.9,linen);boatTeacher.position.y=.4;
 for(let i=0;i<9;i++)cube(shore,0xb9d8c9,Math.sin(i*23)*7,.01,-8-i,1.4,.025,.09);
 const soilColors=[0xbda77e,0x9c9989,0x938055,0x986641],fieldZ=[4,0,-4,-8];
 for(let i=0;i<4;i++)cube(field,soilColors[i],0,-.21,fieldZ[i],16,.42,4.1);

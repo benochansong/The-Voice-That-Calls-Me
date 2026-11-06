@@ -49,7 +49,7 @@ const wrap=oval(ravine,linen,-2,.47,1,.28,.16,.23);
 const coins=[0,1].map(i=>oval(ravine,0xcac4a4,2.52+i*.13,.98,-5.52,.073,.027,.073));
 for(let i=0;i<10;i++)oval(fold,0x817d71,(i%2?1:-1)*(2.4+i%3*.7),.4,3.8-i*.95,1.3,1.2+i%3*.35,1.45);
 const shepherd=actor(fold,0,-6.3,0xa08261);
-cube(shepherd,wood,.42,.96,0,.065,1.92,.065);
+bindPersonAccessory(shepherd,cube(shepherd,wood,.42,.96,0,.065,1.92,.065),'left');
 const lambView=sheep.clone();fold.add(lambView);lambView.scale.setScalar(.73);
 const caller5=actor(jericho,0,.2,linen),bart=actor(jericho,-3.65,1.5,0xa88969);
 const cloak=oval(jericho,0x987955,-3.6,.09,1.65,.53,.07,.45);
@@ -57,7 +57,14 @@ const zac=actor(jericho,3.4,-4.3,0x8e675e,.88);
 cube(jericho,wood,3.7,1.85,-4.5,.62,3.7,.6);
 cube(jericho,wood,3.26,2.1,-4.4,1.4,.22,.34).rotation.z=.24;
 for(let i=0;i<7;i++)oval(jericho,0x778854,3.8+Math.sin(i*2)*1.15,3.75+i%3*.38,-4.65+Math.cos(i)*.8,1.15,.77,1.1);
-for(let i=0;i<10;i++)actor(jericho,(i%2?1:-1)*(1.55+i%3*.48),-1.1+Math.floor(i/2)*.95,0x948572+i*0x010103,.87);
+const jerichoBystanders=[];
+for(let i=0;i<10;i++){
+ const side=i%2?1:-1;
+ const villager=actor(jericho,side*(1.55+i%3*.48),-1.1+Math.floor(i/2)*.95,0x948572+i*0x010103,.87);
+ if(i===4||i===5){
+  villager.rotation.y=-side*.47;jerichoBystanders.push(createPassingNeighbor(villager,side));
+ }
+}
 for(let i=0;i<7;i++){const z=-7+i*2.4;cube(jericho,0xc29a75,-7,1.65,z,2.1,3.3,2.28);cube(jericho,linen,-7,3.33,z,2.4,.18,2.5)}
 cube(jericho,wood,-3.9,.57,-6.55,2.8,.17,1.06);
 for(let i=0;i<4;i++)oval(jericho,0xb88351,-4.8+i*.58,.73,-6.55,.21,.1,.18);
@@ -71,6 +78,7 @@ function syncFifth(b){
 function fifthBlocked(x,z){
  const area=fifth[save.chapterStep][6];
  if(area==='fold')return Math.abs(x)>1.4||z>3.9||z< -2.5;
+ if(area==='jericho'&&jerichoBystanders.some(n=>passingNeighborBlocks(n,x,z,sheep.position)))return true;
  return Math.abs(x)>5.55||z>7.3||z< -6.25||area==='jericho'&&Math.hypot(x-3.7,z+4.5)<.56;
 }
 function fifthSounds(){
@@ -84,6 +92,7 @@ const unit=t=>T.MathUtils.clamp(t,0,1);
 function updateFifth(dt){
  const s=save.chapterStep,b=fifth[s],area=b[6],t=beatTime,p=sheep.position;
  p.y=0;
+ if(area==='jericho')for(const neighbor of jerichoBystanders)stepPassingNeighbor(neighbor,dt,p);
  by('place').textContent={wayside:'여리고로 가는 길',ravine:'비유 · 여행자와 여관',fold:'비유 · 목자를 기다리는 양',jericho:'여리고 · 길가에서 식탁까지'}[area];
  const fire=s==='embers'&&!save.lostParable&&distance(-3.4,.7)<1.45;
  by('hint').textContent=fire?'E · 잃은 양의 비유 듣기':b[5]&&distance(b[0],b[1])<1.55?'E · '+b[5]:b[4];

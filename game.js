@@ -65,6 +65,7 @@ standingGiver.visible=false;
 const palmPool=oval(offeringHands,0x7daead,0,.621,.594,.112,.012,.078);
 const waterGlimmer=oval(offeringHands,0xe0e9d7,-.035,.632,.585,.046,.004,.011);
 function marketWaterTarget(out){return palmPool.getWorldPosition(out)}
+const offeringLook=new T.Vector3();
 function updateWaterGiver(progress,dt){
  const offering=!save.drank||progress!==null;
  standingGiver.visible=!offering;kneelingGiver.visible=offering;offeringHands.visible=offering;
@@ -73,15 +74,23 @@ function updateWaterGiver(progress,dt){
  const tilt=progress===null?0:Math.sin(Math.PI*Math.min(1,Math.max(0,progress)));
  // The hands remain cupped; the small forward reach keeps water and palms together.
  kneelingGiver.rotation.x=.009*breath+.026*tilt;
- const dx=sheep.position.x-jesus.position.x,dz=sheep.position.z-jesus.position.z;
- const glance=T.MathUtils.clamp(Math.atan2(dx,Math.max(.55,dz)),-.55,.55);
- const chin=T.MathUtils.clamp(Math.atan2(.27+.22*tilt,Math.hypot(dx,dz)),.05,.42);
- offeringFace.rotation.y=softTurn(offeringFace.rotation.y,glance,dt,5);
- offeringFace.rotation.x=softTurn(offeringFace.rotation.x,chin,dt,5);
+ // Follow the lamb's eye line as the head bends rather than aiming at its feet.
+ head.localToWorld(offeringLook.set(0,.014,-.289));
+ kneelingGiver.worldToLocal(offeringLook);
+ const dx=offeringLook.x,dz=offeringLook.z-.267;
+ const glance=Math.atan2(dx,Math.max(.35,dz));
+ const chin=Math.atan2(1.154-offeringLook.y,Math.hypot(dx,dz));
+ offeringFace.rotation.y=softTurn(offeringFace.rotation.y,T.MathUtils.clamp(glance*.86,-.55,.55),dt,5);
+ offeringFace.rotation.x=softTurn(offeringFace.rotation.x,T.MathUtils.clamp(chin*.86,-.12,.42),dt,5);
+ updateOfferingEyes(offeringFace,glance-offeringFace.rotation.y,chin-offeringFace.rotation.x,dt,clock);
  offeringHands.position.set(0,.005*breath-.012*tilt,.014*tilt);
  waterGlimmer.scale.x=.045+.005*Math.sin(clock*2.4);
 }
 const seller=human(-5,4,0xa46144),kid=human(5,-4,0xd79c57,.72);
+const marketSellerLane=createPassingNeighbor(seller,-1);
+const marketResident=human(4.35,2.65,0x778571);
+marketResident.rotation.y=.35;
+const marketResidentLane=createPassingNeighbor(marketResident,1);
 const fishers=[human(-3,-15,0x668d83),human(-4,-15,0xb48052),human(3,-17,0xb86e54),human(4,-17,0x73978a)];
 const bori=buildBori();
 const {sheep,head,ears,legs,boriMouthAnchor}=bori;
@@ -144,6 +153,8 @@ function blocked(x,z){
  if(Math.abs(x)>7.8||z>20||z< -20||z< -14&&Math.abs(x)>2.2)return true;
  const fromTeacher=Math.hypot(x-jesus.position.x,z-jesus.position.z);
  if(!save.drank&&fromTeacher<.53&&fromTeacher<distance(jesus.position.x,jesus.position.z))return true;
+ if(save.drank&&(passingNeighborBlocks(marketSellerLane,x,z,sheep.position)||
+                 passingNeighborBlocks(marketResidentLane,x,z,sheep.position)))return true;
  return walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.35&&Math.abs(z-cz)<d+.35)
 }
 const soundFacing=new T.Vector3();
@@ -153,7 +164,7 @@ function marketCues(){
   const h=marketWaterTarget(handSoundPosition);
   return [[h.x,h.z,'water','손에 맺힌 물방울']];
  }
- const sources=[[jesus.position.x,jesus.position.z,'call','익숙한 부름'],[-5,4,'step','장수의 발소리']];
+ const sources=[[jesus.position.x,jesus.position.z,'call','익숙한 부름'],[seller.position.x,seller.position.z,'step','장수의 발소리']];
  if(!save.child)sources.push([5,-4,'cry','아이의 훌쩍임']);
  return sources;
 }
@@ -205,7 +216,7 @@ function loop(now){
  if(p.x!==lastX||p.z!==lastZ)sheep.rotation.y=Math.atan2(lastX-p.x,lastZ-p.z);
  }
  if(!listen)setDirectionCue('');
- if(save.prologue){updateNativity(dt,move);playSceneMusic();renderer.render(scene,camera);return}
+ if(save.prologue){updateNativity(dt,move);updateCast(dt);playSceneMusic();renderer.render(scene,camera);return}
  if(!save.chapterStep){updateWaterMeeting(dt);updateMarketTeacher(dt)}
  const sitting=(pose==='sit'&&clock<poseEnd)||save.chapterStep==='credits'||
   (save.shelter&&['gale','hush'].includes(save.chapterStep));
@@ -218,7 +229,12 @@ function loop(now){
   kid.rotation.y=softTurn(kid.rotation.y,gaze,dt,5);
   kid.position.y=.014*Math.min(1,gap)*Math.abs(Math.sin(clock*6.8));
  }
- if(!save.chapterStep&&save.drank&&!sellerSeen&&distance(-5,4)<2.2){sellerSeen=true;seller.rotation.y=.7;seller.position.x-=.8;caption('생선 장수가 웃으며 길을 비켜 준다.')}
+ if(!save.chapterStep&&save.drank){
+  stepPassingNeighbor(marketResidentLane,dt,p);
+  if(stepPassingNeighbor(marketSellerLane,dt,p)&&!sellerSeen){
+   sellerSeen=true;caption('생선 장수가 보리를 보고 한 걸음 옆으로 비켜 준다.');
+  }
+ }
  if(save.drank&&!save.done&&sceneTime<0&&p.z< -13.4){sceneTime=0;listen=false;caption('호숫가에서 예수님이 시몬과 안드레를 부르신다.',4)}
  if(sceneTime>=0){
  let before=sceneTime;sceneTime+=dt;
@@ -237,6 +253,7 @@ function loop(now){
  by('place').textContent=p.z< -10?'갈릴리 호숫가':p.z<1?'아이의 골목':'가버나움 장터';
  by('hint').textContent=save.done?'E · 시몬의 집으로 동행하기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
  if(save.chapterStep)updateChapter(dt);
+ updateCast(dt);
  if(waterMeeting)by('hint').textContent=save.drank?'예수님 곁에서 숨 고르기':'손 가까이 다가가기 · 물러서면 멈춤';
  if(chapterReplay)showReplayExitHint();
  // Follow the actual terrain height. On deck, scale only the rocking component of the camera, not the hull or the player's footing.
@@ -248,6 +265,8 @@ function loop(now){
  for(let r=.2;r<=3.8;r+=.2){let x=p.x-Math.sin(viewYaw)*r,z=p.z+Math.cos(viewYaw)*r;if(!save.chapterStep&&walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.12&&Math.abs(z-cz)<d+.12))break;target.set(x,cameraBaseY+1.35+r*.19,z)}
  focus.set(p.x+Math.sin(viewYaw)*1.5,cameraBaseY+.78,p.z-Math.cos(viewYaw)*1.5);
  composeWaterCamera(target,focus);
+ composeMealView(target,focus);
+ composeMealView(target,focus);
  if(save.chapterStep==='credits')frameRestingPlace(target,focus);
  camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(focus);
  if(save.chapterStep)chapterCamera();
