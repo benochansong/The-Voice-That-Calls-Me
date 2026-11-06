@@ -2,7 +2,7 @@
 const firstSet=scene.children.filter(object=>!object.isLight&&object!==sheep);
 const courtyard=new T.Group(), roofSet=new T.Group();
 scene.add(courtyard,roofSet);
-function actor(set,x,z,color,size=1){const figure=human(x,z,color,size);set.add(figure);return figure}
+function actor(set,x,z,color,size=1,role){const figure=human(x,z,color,size,role);set.add(figure);return figure}
 function room(set){
  cube(set,0xd9b98b,0,-.22,0,34,.4,30);
  cube(set,0xcb9e73,0,1.6,-6,13,3.2,.35);

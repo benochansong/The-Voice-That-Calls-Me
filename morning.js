@@ -35,7 +35,7 @@ for(let x of [2.1,5.1])cube(dawnGarden,0xc9b394,x,1.35,4.6,.36,2.7,.48);
 cube(dawnGarden,wood,3.6,2.72,4.6,3.36,.2,.48);
 const magdalene=actor(dawnGarden,-.8,2.4,0x907a87),gardener=actor(dawnGarden,-2.3,-3.8,linen);
 const witnesses8=[actor(dawnGarden,3.8,4.55,0x778b82),actor(dawnGarden,4.65,4.2,0xaa896d)];
-const angels8=[actor(dawnGarden,-3.5,-4.9,linen,.83),actor(dawnGarden,-2.6,-4.95,linen,.83)];
+const angels8=[actor(dawnGarden,-3.5,-4.9,linen,.83, 'angel'),actor(dawnGarden,-2.6,-4.95,linen,.83,'angel')];
 cube(breakfastBeach,0xdcc5a0,0,-.22,3,58,.44,17.5);
 cube(breakfastBeach,water,0,-.38,-27,110,.44,44);
 const waveTips=[];
@@ -45,17 +45,26 @@ for(let i=0;i<28;i++){
 }
 for(let i=0;i<16;i++)oval(breakfastBeach,0x97ad99,-37+i*5,.1,-43,6.5,2+i%4,5);
 const morningBoat=new T.Group();breakfastBeach.add(morningBoat);morningBoat.position.set(3.9,-.04,-5.9);
-oval(morningBoat,wood,0,.13,0,1.4,.5,2.18);oval(morningBoat,0x6f5747,0,.48,0,1.13,.09,1.85);
-for(let i=0;i<8;i++){
- cube(morningBoat,0x9ca29a,-.81+i*.2,.61,-.1,.035,.035,1.57);
- cube(morningBoat,0x9ca29a,-.12,.62,-.85+i*.22,1.5,.035,.035);
-}
+morningBoat.add(buildStorySkiff(4.55,2.22));morningBoat.rotation.y=-.68;
 for(let i=0;i<7;i++)oval(breakfastBeach,0x69554a,-2.65+.4*Math.cos(i*.9),.12,-1.4+.4*Math.sin(i*.9),.22,.15,.19);
 const ember=oval(breakfastBeach,0xefaa69,-2.65,.22,-1.4,.31,.15,.24);
 const bread8=oval(breakfastBeach,0xc49762,-2.05,.35,-1.55,.28,.12,.2);
 const fish8=oval(breakfastBeach,0x8c9b96,-2.68,.36,-1.4,.14,.09,.32);
 const host8=actor(breakfastBeach,-2.1,-2.2,linen),peter8=actor(breakfastBeach,2.7,-4.6,0x788a80);
-for(let i=0;i<5;i++)actor(breakfastBeach,-4.4+i*.73,-2.9-Math.sin(i)*.4,[0x978879,0xaf936e,0x80988a][i%3],.83);
+// Leave the near side of the breakfast circle open for the lamb.
+for(let i=0;i<5;i++){
+ const angle=-.48+i*.91,x=-2.65+2.05*Math.cos(angle),z=-1.4-1.76*Math.sin(angle);
+ const disciple=actor(breakfastBeach,x,z,[0x978879,0xaf936e,0x80988a][i%3],.85+i%3*.035);
+ disciple.rotation.y=Math.atan2(-2.65-x,-1.4-z);
+}
+let restEntryYaw=null;
+function frameRestingPlace(eye,look){
+ if(restEntryYaw===null)restEntryYaw=yaw;
+ const p=sheep.position,side=save.restSpot==='boat'?2.4:3.1;
+ const turn=yaw-restEntryYaw,c=Math.cos(turn),s=Math.sin(turn);
+ eye.set(p.x+side*c-2.3*s,1.42,p.z+side*s+2.3*c);
+ look.set(p.x-.62*c+.25*s,.65,p.z-.62*s-.25*c);
+}
 const lastPanel=document.createElement('section');
 lastPanel.id='lastPanel';lastPanel.hidden=true;
 lastPanel.innerHTML='<small>여행의 끝</small><h2>나를 부르는 목소리</h2><p id="lastMemory"></p><p>원전　네 복음서<br>보리의 여정　창작 이야기</p>';
@@ -120,7 +129,10 @@ function updateEighth(dt){
  const trip=s==='openTomb'?unit((t-4)/2)*(1-unit((t-6.7)/2)):0;
  a.position.set(3.8+i*.65-(6.5+i*.3)*trip,0,4.55-i*.3-8.5*trip);
  });
- gardener.scale.y=s==='reunion'||s==='galilee'?.72:1;
+ const greeting=s==='galilee'?1:s==='reunion'?T.MathUtils.smoothstep(t,0,.95):0;
+ gardener.scale.y=1-greeting*.23;
+ setGreetingHand(gardener,greeting);
+ if(s==='reunion')gardener.rotation.y=softTurn(gardener.rotation.y,Math.atan2(p.x-gardener.position.x,p.z-gardener.position.z),dt,6);
  if(s==='openTomb'&&t>=10)enterBeat('tears');
  if(s==='herName'&&t>=15)enterBeat('newsPath');
  if(s==='testimony'&&t>=9){
@@ -137,6 +149,8 @@ function updateEighth(dt){
  const near=talk?1:s==='peterWalk'?unit(t/3):0;
  host8.position.set(-2.1+near*2.9,0,-2.2-near*2.2);
  peter8.position.set(s==='netMorning'?2.7:-1.15+near*3,0,s==='netMorning'?-4.6:-2.6-near*1.8);
+ host8.rotation.y=softTurn(host8.rotation.y,Math.atan2(peter8.position.x-host8.position.x,peter8.position.z-host8.position.z),dt,3);
+ peter8.rotation.y=softTurn(peter8.rotation.y,Math.atan2(host8.position.x-peter8.position.x,host8.position.z-peter8.position.z),dt,3);
  peter8.scale.y=seated?.74:.96;
  const serving=s==='mealMorning'?unit((t-4)/2):0;
  bread8.position.set(-2.05+serving*.74,.35+serving*.5,-1.55-serving*.8);
@@ -144,7 +158,8 @@ function updateEighth(dt){
  if(s==='mealMorning'&&t>=9)enterBeat('peterWalk');
  if(s==='threeCalls'&&t>=21){enterBeat('lastRest');caption('배 곁에서는 그물이 마르고, 식탁 곁에는 아직 불씨가 남아 있다.',5)}
  if(s==='credits'){
- sheep.scale.y=.52;head.rotation.x=-.36;legs.forEach(l=>l.rotation.x=.9);
+ const toward=save.restSpot==='boat'?morningBoat.position:ember.position;
+ sheep.rotation.y=softTurn(sheep.rotation.y,Math.atan2(p.x-toward.x,p.z-toward.z),dt,2);
  if(clock>=nextEndingSound){const boat=save.restSpot==='boat';endingSound(boat);nextEndingSound=clock+(boat?2.8:1.9)}
  }
 }

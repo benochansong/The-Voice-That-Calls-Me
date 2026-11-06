@@ -72,11 +72,11 @@ function buildNativity(){
  }
  const player=herder(0,8,0x8b7761);
  const companions=[herder(-1.7,1.25,0x738079),herder(1.4,2,0x9a775f)];
- const messenger=actor(field,-1.3,-1.6,linen);
+ const messenger=actor(field,-1.3,-1.6,linen,1,'angel');
  const halo=new T.PointLight(0xffe4ac,0,13);halo.position.set(-1.3,3,-1.6);field.add(halo);
  const choir=[];
  for(let i=0;i<7;i++){
-  const a=actor(field,-6.2+i*1.8,-7-Math.cos(i)*1.4,0xf0dbba,.74);
+  const a=actor(field,-6.2+i*1.8,-7-Math.cos(i)*1.4,0xf0dbba,.74,'angel');
   a.position.y=3.3+Math.sin(i*.6)*.8;choir.push(a);
  }
  for(let i=0;i<6;i++){
@@ -100,7 +100,17 @@ function buildNativity(){
  for(let i=0;i<17;i++)cube(manger,0xd7b676,-.75+i*.092,.6,Math.sin(i)*.14,.07,.06,.52).rotation.y=Math.cos(i)*.23;
  const swaddle=oval(manger,0xf4dfb7,-.1,.72,0,.48,.2,.24);
  oval(manger,0xc4926e,.41,.76,.015,.18,.16,.16);
+ // Sleeping eyelids and a folded linen edge, seen from the shepherd's side of the manger.
+ function stitch(points,radius,color){
+  const arc=new T.QuadraticBezierCurve3(...points.map(([x,y,z])=>new T.Vector3(x,y,z)));
+  part(manger,new T.TubeGeometry(arc,8,radius,5,false),color,0,0,0,1,1,1);
+ }
+ for(const x of [.347,.458])stitch([[x-.031,.806,.157],[x,.792,.174],[x+.025,.804,.164]],.006,0x785849);
+ oval(manger,0xd5a27d,.41,.775,.167,.026,.022,.021);
+ stitch([[-.31,.877,.016],[-.12,.905,.125],[.12,.789,.207]],.017,0xe0c59c);
+ stitch([[-.11,.908,-.007],[.055,.896,.107],[.19,.795,.17]],.011,0xffebc9);
  const tinyHand=oval(manger,0xd5a27d,.24,.82,.19,.075,.055,.065);
+ for(let i=0;i<3;i++)oval(manger,0xd5a27d,.224+i*.029,.844,.213,.018,.032,.024);
  const cradleLight=new T.PointLight(0xffc383,10,8);cradleLight.position.set(.1,2,-16.35);field.add(cradleLight);
  return {field,player,companions,messenger,halo,choir,flock,flame,swaddle,tinyHand};
 }
@@ -162,7 +172,8 @@ function updateNativity(dt,moving){
  const s=save.prologue,b=nativitySteps[s],p=sheep.position;
  const {player,companions,messenger,halo,choir,flock,flame,swaddle,tinyHand}=nativitySet;
  nativityTime+=dt;const t=nativityTime;
- player.visible=s!=='newborn'&&s!=='acrossYears';player.position.copy(p);player.rotation.y=sheep.rotation.y+Math.PI;
+ player.visible=s!=='newborn'&&s!=='acrossYears';player.position.copy(p);
+ player.rotation.y=softTurn(player.rotation.y,sheep.rotation.y+Math.PI,dt,11);
  player.position.y=moving?.035*Math.abs(Math.sin(clock*8)):0;
  const inField=s==='watchFlock'||s==='goodNews';
  by('place').textContent=inField?'밤에 양을 지키던 목자들':s==='toVillage'?'베들레헴으로 가는 길':'구유 곁 · 베들레헴';
@@ -193,7 +204,8 @@ function updateNativity(dt,moving){
   if(nativitySet.field.visible===market)showMarketSet(market);
   renderer.domElement.style.opacity=String(T.MathUtils.clamp(Math.abs(t-3)/.48,0,1));
   if(market){
-   introEye.set(.72,1.04,14.43);introTarget.set(.35,.67,13.92);
+   marketWaterTarget(introTarget);introEye.copy(introTarget);
+   introEye.x+=.37;introEye.y+=.33;introEye.z+=.56;
    by('place').textContent='여러 해가 흐른 뒤 · 갈릴리';
   }else{
    introEye.set(1.04,1.06,-16.13);introTarget.set(.69,.81,-16.61);

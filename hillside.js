@@ -32,7 +32,7 @@ for(let i=0;i<54;i++){
 }
 cube(shore,0xd9bf94,0,-.21,4,36,.4,20);
 cube(shore,water,0,-.27,-20,90,.4,30);
-const skiff=oval(shore,wood,0,.16,-6.9,1.4,.48,2.1);
+const skiff=buildStorySkiff(4.4,2.45);skiff.position.set(0,-.04,-6.9);shore.add(skiff);
 actor(shore,0,-6.9,linen).position.y=.4;
 for(let i=0;i<9;i++)cube(shore,0xb9d8c9,Math.sin(i*23)*7,.01,-8-i,1.4,.025,.09);
 const soilColors=[0xbda77e,0x9c9989,0x938055,0x986641],fieldZ=[4,0,-4,-8];

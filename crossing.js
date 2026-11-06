@@ -99,7 +99,6 @@ function updateFourth(dt){
  const sleeping=s==='boarding'||s==='gale';captain.rotation.z=sleeping?1.23:Math.max(0,1.23-beatTime);
  captain.position.y=.14;
  mariners[0].position.z=s==='hush'? -1.6-Math.min(1.5,beatTime):s==='gale'||s==='boarding'?-1.6:-3.1;
- if((s==='gale'||s==='hush')&&save.shelter)sheep.scale.y=.65;
  if(s==='gale'&&beatTime>=16)wakeDisciples();
  if(s==='hush'&&beatTime-dt<4&&beatTime>=4)caption('예수님이 일어나 바람을 꾸짖고 바다에 잠잠하라고 말씀하신다.',4);
  if(s==='hush'&&beatTime>=8.8){enterBeat('quiet');caption('바람이 그치고 호수가 아주 잔잔해졌다.　막 4:35–41',5)}
