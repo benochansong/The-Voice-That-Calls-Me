@@ -55,7 +55,7 @@ const beats={
  below:[3.4,3.2,'step','아래층에서 들리는 목소리','왔던 계단을 따라 아래로 내려가기'],
  witness:[1.9,1.65,'call','예수님의 목소리','문 앞 빈자리로 다가가기','집 안을 바라보기'],
  healing:[0,-3.25,'call','자리에서 일어나는 소리','그가 자리를 들고 걸어 나오는 모습을 바라보기'],
- end:[0,1,'step','골목으로 향하는 발소리','2장 · 지붕에서 내려온 자리','여행 수첩 펼치기']
+ end:[0,1,'step','골목으로 향하는 발소리','2장 · 지붕에서 내려온 자리','레위가 있는 세관으로']
 };
 const inCourt=()=>['bedside','recovery','aside','evening'].includes(save.chapterStep);
 let beatTime=0;
@@ -65,19 +65,22 @@ function enterBeat(step,spawn){
  checkpoint();syncChapter();
 }
 function syncChapter(){
- const active=!!beats[save.chapterStep];
- firstSet.forEach(o=>o.visible=!active);courtyard.visible=active&&inCourt();roofSet.visible=active&&!inCourt();
+ const later=syncLater();
+ const active=later||!!beats[save.chapterStep];
+ firstSet.forEach(o=>o.visible=!active);courtyard.visible=active&&inCourt();roofSet.visible=active&&!inCourt()&&!later;
+ if(later)return;
  if(active){
  scene.background.set(inCourt()?0xf0d2a6:0xc6d8cb);
  document.querySelector('header small').textContent=inCourt()?'가버나움 · 제1장':'가버나움 · 제2장';
  }
 }
-function chapterCue(){return beats[save.chapterStep].slice(0,4)}
+function chapterCue(){return (laterBeats[save.chapterStep]||beats[save.chapterStep]).slice(0,4)}
 function chapterAction(){
  const s=save.chapterStep;
  if(!s){enterBeat('bedside',[0,0,6.7]);caption('부두를 떠나 시몬과 안드레의 집에 도착했다.');return}
  const b=beats[s];
- if(s==='end'){journal();return}
+ if(s==='end'){enterBeat('levi',[0,0,6]);caption('호숫가 세관에 레위가 앉아 있다.');return}
+ if(laterBeats[s]){laterAction();return}
  if(distance(b[0],b[1])>1.65)return;
  if(s==='bedside'){enterBeat('recovery');caption('예수님이 열병으로 누운 시몬의 장모에게 다가가 손을 잡으신다.',4)}
  if(s==='evening'){enterBeat('doorway',[0,0,7]);caption('제1장 끝　·　며칠 뒤, 다시 가버나움. 네 사람이 한 사람을 침상에 누인 채 데려왔다.',6)}
@@ -86,6 +89,7 @@ function chapterAction(){
  if(s==='witness'){enterBeat('healing');caption('예수님이 그의 죄가 용서되었다고 말씀하신다. 서기관들이 마음속으로 의문을 품는다.',5)}
 }
 function chapterBlocked(x,z){
+ if(laterBeats[save.chapterStep])return laterBlocked(x,z);
  if(Math.abs(x)>6.8||z>8||z< -5.45)return true;
  if(inCourt())return x> -2.6&&x<-.5&&z< -2.2&&z> -3.2;
  // Access the roof only through the foot of the stairs. Keep the sheep off the open shaft.
@@ -97,6 +101,7 @@ function chapterBlocked(x,z){
 }
 function updateChapter(dt){
  const s=save.chapterStep,b=beats[s],p=sheep.position;beatTime+=dt;
+ if(laterBeats[s]){updateLater(dt);return}
  p.y=!inCourt()&&p.x>=2.5&&p.x<=4.3?T.MathUtils.clamp((3-p.z)*.5,0,3):0;
  by('place').textContent=inCourt()?'시몬의 집 · 안뜰':'지붕이 열린 집';
  by('hint').textContent=b[5]&&(s==='end'||distance(b[0],b[1])<1.65)?'E · '+b[5]:b[4];
@@ -139,7 +144,7 @@ function appendChapterRecord(){
  if(!refs)return;
  if(!['bedside','recovery'].includes(save.chapterStep))refs.append(' 시몬의 장모가 열병에서 일어나 사람들을 대접했다(막 1:29–31).');
  if(!inCourt())refs.append(' 해가 지자 사람들이 집 앞으로 모였다(막 1:32–34).');
- if(save.chapterStep==='end')refs.append(' 네 사람이 지붕을 열어 중풍병자를 예수님 앞에 내렸다. 그는 예수님의 말씀을 듣고 자기 자리를 들고 걸어 나갔다(막 2:1–12).');
+ if(save.chapterStep==='end'||laterBeats[save.chapterStep])refs.append(' 네 사람이 지붕을 열어 중풍병자를 예수님 앞에 내렸다. 그는 예수님의 말씀을 듣고 자기 자리를 들고 걸어 나갔다(막 2:1–12).');
+ appendLaterRecord(refs);
  if(!inCourt())by('memory').lastElementChild.append(' 그날 저녁, 보리는 물동이가 지나도록 비켜 주고 천막 아래를 제 발로 걸었다.');
 }
-syncChapter();

@@ -118,7 +118,7 @@ function blocked(x,z){
  return walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.35&&Math.abs(z-cz)<d+.35)
 }
 function soundscape(){
- const sources=save.chapterStep?[chapterCue()]:save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
+ const sources=save.chapterStep?chapterSounds():save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
  const audible=sources.map(([x,z,type,name])=>{
  let angle=Math.atan2(x-sheep.position.x,sheep.position.z-z)-yaw;
  angle=Math.atan2(Math.sin(angle),Math.cos(angle));return {angle,type,name,weight:(1.5+Math.cos(angle))/(3+distance(x,z))};
