@@ -6,17 +6,41 @@ function loadPlayerPreferences(){
  let stored={};
  try{stored=JSON.parse(localStorage.getItem('boriPrefs'))||{}}catch{}
  const defaultShake=matchMedia('(prefers-reduced-motion: reduce)').matches?0:100;
- const volume=value=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round(value))):100;
+ const volume=(value,fallback=100)=>Number.isFinite(value)?Math.max(0,Math.min(100,Math.round(value))):fallback;
  return {
   mute:stored.mute===true,toggle:stored.toggle===true,
   directionCaptions:stored.directionCaptions!==false,
   captionSize:captionSizes.includes(stored.captionSize)?stored.captionSize:16,
   cameraShake:shakeLevels.includes(stored.cameraShake)?stored.cameraShake:defaultShake,
-  voiceVolume:volume(stored.voiceVolume),ambientVolume:volume(stored.ambientVolume)
+  voiceVolume:volume(stored.voiceVolume),ambientVolume:volume(stored.ambientVolume),
+  musicVolume:volume(stored.musicVolume,40)
  };
 }
 const prefs=loadPlayerPreferences();
-let audio,environmentGain;
+let audio,environmentGain,musicGain;
+let scoreListening=false,lastMusicTarget=null;
+
+function musicAudible(){return !prefs.mute&&prefs.musicVolume>0}
+
+// Only the music bus is ducked. Navigation cues and the spoken call keep their own mix.
+function updateMusicLevel(listening){
+ scoreListening=listening;
+ if(!musicGain)return;
+ const foreground=listening||(prefs.voiceVolume>0&&window.speechSynthesis?.speaking);
+ const target=musicAudible()?prefs.musicVolume/100*(foreground ? .10 : 1):0;
+ if(target===lastMusicTarget)return;
+ const now=audio.currentTime;
+ const gain=musicGain.gain;
+ gain.cancelScheduledValues(now);
+ if(target===0){
+  gain.setValueAtTime(0,now);
+ }else{
+  const decreasing=lastMusicTarget!==null&&target<lastMusicTarget;
+  const response=decreasing ? .011 : .24;
+  gain.setTargetAtTime(target,now,response);
+ }
+ lastMusicTarget=target;
+}
 function setDirectionCue(text){
  const cue=by('directionCue');
  if(cue.textContent!==text)cue.textContent=text;
@@ -25,19 +49,22 @@ function applyPlayerPreferences(){
  document.documentElement.style.setProperty('--caption-size',prefs.captionSize+'px');
  by('voiceLevel').value=prefs.voiceVolume+'%';
  by('ambientLevel').value=prefs.ambientVolume+'%';
- for(const id of ['voiceVolume','ambientVolume'])by(id).setAttribute('aria-valuetext',prefs[id]+'%');
+ by('musicLevel').value=prefs.musicVolume+'%';
+ for(const id of ['voiceVolume','ambientVolume','musicVolume'])by(id).setAttribute('aria-valuetext',prefs[id]+'%');
  by('sampleVoice').disabled=prefs.mute||prefs.voiceVolume===0||!window.speechSynthesis;
  by('sampleAmbient').disabled=!environmentAudible();
  if(!prefs.directionCaptions)setDirectionCue('');
  if(environmentGain)environmentGain.gain.value=prefs.mute?0:prefs.ambientVolume/100;
+ updateMusicLevel(scoreListening);
 }
-function settings(){
+function settings(event){
  const oldVoice=prefs.voiceVolume;
  for(const key of Object.keys(prefs)){
   const control=by(key);
   prefs[key]=control.type==='checkbox'?control.checked:Number(control.value);
  }
  applyPlayerPreferences();
+ if(event?.isTrusted)awaken();
  if(prefs.mute||prefs.voiceVolume!==oldVoice)window.speechSynthesis?.cancel();
  try{localStorage.setItem('boriPrefs',JSON.stringify(prefs))}catch{}
 }
@@ -50,16 +77,21 @@ applyPlayerPreferences();
 
 function environmentAudible(){return !prefs.mute&&prefs.ambientVolume>0}
 function awaken(){
- if(!environmentAudible())return;
+ if(!environmentAudible()&&!musicAudible())return;
  try{
   if(!audio){
    audio=new AudioContext();environmentGain=audio.createGain();
    environmentGain.gain.value=prefs.ambientVolume/100;
    environmentGain.connect(audio.destination);
+   musicGain=audio.createGain();
+   musicGain.gain.value=0;
+   musicGain.connect(audio.destination);
+   updateMusicLevel(scoreListening);
   }
   if(audio.state==='suspended')audio.resume().catch(()=>{});
  }catch{}
 }
+by('menu').addEventListener('click',awaken);
 function voice(text){
  if(prefs.mute||!prefs.voiceVolume||!window.speechSynthesis)return;
  const utterance=new SpeechSynthesisUtterance(text);

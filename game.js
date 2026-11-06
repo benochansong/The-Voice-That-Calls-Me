@@ -118,8 +118,8 @@ function action(){
  else if(save.drank&&!save.done&&!save.child&&distance(5,-4)<2.5){save.child=true;pose='sit';poseEnd=clock+2.3;caption('아이가 끈을 풀고 보리 곁에 선다.');checkpoint()}
  else if(save.done)chapterAction();
 }
-function earDown(){listen=prefs.toggle?!listen:true;nextTone=0}
-function earUp(){if(!prefs.toggle)listen=false}
+function earDown(){listen=prefs.toggle?!listen:true;updateMusicLevel(listen);nextTone=0}
+function earUp(){if(!prefs.toggle){listen=false;updateMusicLevel(false)}}
 onkeydown=e=>{if(by('book').open)return;awaken();keys.add(e.code);if(!e.repeat){if(e.code==='KeyE')action();if(e.code==='KeyQ')earDown()}};
 onkeyup=e=>{keys.delete(e.code);if(e.code==='KeyQ')earUp()};
 onblur=()=>{keys.clear();listen=false;drag=false};
@@ -146,11 +146,25 @@ function soundscape(){
  if(clock>nextTone){audible.forEach((s,i)=>ping(s.type,s.angle,Math.max(.004,Math.min(.12,s.weight*.6))/(1+i)));nextTone=clock+.85}
  return cue.angle;
 }
-let prev=performance.now(),padA=false,padLT=false;
+function playSceneMusic(){
+ if(!audio||audio.state!=='running'||!musicAudible()||document.hidden){
+  stopScore();return;
+ }
+ updateMusicLevel(listen);
+ updateScore(audio,musicGain,scoreCue(save));
+}
+// A hidden page may stop receiving animation frames while scheduled audio keeps sounding.
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopScore()});
+window.addEventListener('pagehide',stopScore);
+let prev=performance.now(),padA=false,padLT=false,padMoving=false;
 function loop(now){
  requestAnimationFrame(loop);const dt=Math.min(.05,(now-prev)/1000);prev=now;
- if(by('book').open)return;clock+=dt;
+ if(by('book').open){playSceneMusic();return}
+ clock+=dt;
  const pad=Array.from(navigator.getGamepads?.()||[]).find(Boolean),axis=i=>Math.abs(pad?.axes[i]||0)>.16?pad.axes[i]:0;
+ const usingStick=Boolean(axis(0)||axis(1)||axis(2));
+ if(usingStick&&!padMoving)awaken();
+ padMoving=usingStick;
  const a=!!pad?.buttons[0]?.pressed,lt=!!pad?.buttons[6]?.pressed;
  if(a&&!padA){awaken();action()}if(lt&&!padLT){awaken();earDown()}if(!lt&&padLT)earUp();padA=a;padLT=lt;
  yaw+=(Number(keys.has('ArrowRight'))-Number(keys.has('ArrowLeft'))+axis(2))*dt*1.9;
@@ -164,7 +178,7 @@ function loop(now){
  sheep.rotation.y=Math.atan2(-vx,-vz);
  }
  if(!listen)setDirectionCue('');
- if(save.prologue){updateNativity(dt,move);renderer.render(scene,camera);return}
+ if(save.prologue){updateNativity(dt,move);playSceneMusic();renderer.render(scene,camera);return}
  const sitting=pose==='sit'&&clock<poseEnd,drinking=pose==='drink'&&clock<poseEnd;
  sheep.scale.y=sitting?.72:1;head.rotation.x=drinking?-.7:0;
  legs.forEach((l,i)=>l.rotation.x=move?Math.sin(clock*12+i%2*Math.PI+(i>1?Math.PI:0))*.45:0);
@@ -194,6 +208,7 @@ function loop(now){
  for(let r=.2;r<=3.8;r+=.2){let x=p.x-Math.sin(viewYaw)*r,z=p.z+Math.cos(viewYaw)*r;if(!save.chapterStep&&walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.12&&Math.abs(z-cz)<d+.12))break;target.set(x,cameraBaseY+1.35+r*.19,z)}
  camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(p.x+Math.sin(viewYaw)*1.5,cameraBaseY+.78,p.z-Math.cos(viewYaw)*1.5);
  if(save.chapterStep)chapterCamera();
+ playSceneMusic();
  renderer.render(scene,camera);
 }
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
