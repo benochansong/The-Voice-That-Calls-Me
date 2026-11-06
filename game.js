@@ -74,11 +74,17 @@ for(let s of [-1,1]){
 }
 oval(sheep,cream,0,.61,.56,.14,.14,.15);
 const by=id=>document.getElementById(id);
-const fresh=()=>({drank:false,child:false,done:false,x:0,z:17});
+const prologuePreview=location.hash==='#nativity-preview';
+const fresh=()=>({drank:false,child:false,done:false,x:0,z:8,prologue:'watchFlock'});
 let save=fresh(),prefs={mute:false,toggle:false};
-try{Object.assign(save,JSON.parse(localStorage.boriJourney||'{}'));Object.assign(prefs,JSON.parse(localStorage.boriPrefs||'{}'))}catch{}
+try{
+ const previous=JSON.parse(localStorage.getItem('boriJourney'));
+ // Older saves already belong to the market or a later chapter, including undrunk market saves.
+ if(!prologuePreview&&previous&&typeof previous==='object')save=Object.assign({drank:false,child:false,done:false,x:0,z:17},previous);
+}catch{}
+try{Object.assign(prefs,JSON.parse(localStorage.boriPrefs||'{}'))}catch{}
 sheep.position.set(save.x,0,save.z);
-function checkpoint(){save.x=sheep.position.x;save.z=sheep.position.z;try{localStorage.boriJourney=JSON.stringify(save)}catch{}}
+function checkpoint(){if(prologuePreview)return;save.x=sheep.position.x;save.z=sheep.position.z;try{localStorage.boriJourney=JSON.stringify(save)}catch{}}
 function settings(){prefs={mute:by('mute').checked,toggle:by('toggle').checked};try{localStorage.boriPrefs=JSON.stringify(prefs)}catch{}if(prefs.mute)window.speechSynthesis?.cancel()}
 for(let key of ['mute','toggle']){by(key).checked=prefs[key];by(key).onchange=settings}
 let yaw=0,keys=new Set(),listen=false,drag=false,audio,clock=0,nextTone=0,sayUntil=0,pose='',poseEnd=0,sceneTime=-1,sellerSeen=false,camReady=false;
@@ -94,12 +100,13 @@ function ping(type,side,level){
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(audio.destination);osc.start(t);osc.stop(t+.38);
 }
 function journal(){keys.clear();listen=false;
- by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();by('book').showModal()}
+ by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();by('book').showModal()}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
 by('restart').onclick=()=>{if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
 const distance=(x,z)=>Math.hypot(sheep.position.x-x,sheep.position.z-z);
 function action(){
  if(by('book').open||clock<poseEnd||sceneTime>=0)return;
+ if(save.prologue){nativityAction();return}
  if(!save.drank&&distance(.35,13.6)<2.5){save.drank=true;pose='drink';poseEnd=clock+2;sheep.rotation.y=0;caption('예수님　“보리야.”',4);voice('보리야');checkpoint()}
  else if(save.drank&&!save.done&&!save.child&&distance(5,-4)<2.5){save.child=true;pose='sit';poseEnd=clock+2.3;caption('아이가 끈을 풀고 보리 곁에 선다.');checkpoint()}
  else if(save.done)chapterAction();
@@ -113,12 +120,13 @@ renderer.domElement.onpointerdown=e=>{awaken();if(e.button===2)earDown();else dr
 onpointerup=e=>{drag=false;if(e.button===2)earUp()};oncontextmenu=e=>e.preventDefault();
 onpointermove=e=>{if(drag)yaw+=e.movementX*.006};
 function blocked(x,z){
+ if(save.prologue)return nativityBlocked(x,z);
  if(save.chapterStep)return chapterBlocked(x,z);
  if(Math.abs(x)>7.8||z>20||z< -20||z< -14&&Math.abs(x)>2.2)return true;
  return walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.35&&Math.abs(z-cz)<d+.35)
 }
 function soundscape(){
- const sources=save.chapterStep?chapterSounds():save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
+ const sources=save.prologue?nativityCues():save.chapterStep?chapterSounds():save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
  const audible=sources.map(([x,z,type,name])=>{
  let angle=Math.atan2(x-sheep.position.x,sheep.position.z-z)-yaw;
  angle=Math.atan2(Math.sin(angle),Math.cos(angle));return {angle,type,name,weight:(1.5+Math.cos(angle))/(3+distance(x,z))};
@@ -139,12 +147,13 @@ function loop(now){
  let dx=Number(keys.has('KeyD'))-Number(keys.has('KeyA'))+axis(0),dz=Number(keys.has('KeyS'))-Number(keys.has('KeyW'))+axis(1);
  const norm=Math.max(1,Math.hypot(dx,dz)),speed=(listen?1.15:keys.has('ShiftLeft')||pad?.buttons[10]?.pressed?4.8:2.75)*dt;
  const vx=(dx*Math.cos(yaw)-dz*Math.sin(yaw))*speed/norm,vz=(dx*Math.sin(yaw)+dz*Math.cos(yaw))*speed/norm,p=sheep.position;
- let move=(dx||dz)&&clock>=poseEnd&&sceneTime<0&&save.chapterStep!=='testimony'&&save.chapterStep!=='credits';
+ let move=(dx||dz)&&(!save.prologue||nativityCanWalk())&&clock>=poseEnd&&sceneTime<0&&save.chapterStep!=='testimony'&&save.chapterStep!=='credits';
  if(move){
  if(!blocked(p.x+vx,p.z))p.x+=vx;
- if(!blocked(p.x,p.z+vz)&& (save.drank||p.z+vz>11))p.z+=vz;
+ if(!blocked(p.x,p.z+vz)&& (save.prologue||save.drank||p.z+vz>11))p.z+=vz;
  sheep.rotation.y=Math.atan2(-vx,-vz);
  }
+ if(save.prologue){updateNativity(dt,move);renderer.render(scene,camera);return}
  const sitting=pose==='sit'&&clock<poseEnd,drinking=pose==='drink'&&clock<poseEnd;
  sheep.scale.y=sitting?.72:1;head.rotation.x=drinking?-.7:0;
  legs.forEach((l,i)=>l.rotation.x=move?Math.sin(clock*12+i%2*Math.PI+(i>1?Math.PI:0))*.45:0);
@@ -173,4 +182,5 @@ function loop(now){
  renderer.render(scene,camera);
 }
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
-onresize=resize;resize();requestAnimationFrame(loop);
+onresize=resize;resize();
+window.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
