@@ -88,7 +88,7 @@ function voice(t){if(prefs.mute||!window.speechSynthesis)return;const u=new Spee
 function ping(type,side,level){
  if(!audio||prefs.mute)return;
  const osc=audio.createOscillator(),gain=audio.createGain(),pan=audio.createStereoPanner(),t=audio.currentTime;
- const hz={water:920,call:330,step:90,cry:490,coin:1480}[type];
+ const hz={water:920,call:330,step:90,cry:490,coin:1480,cock:660}[type];
  osc.type=type==='step'?'triangle':'sine';osc.frequency.setValueAtTime(hz,t);osc.frequency.exponentialRampToValueAtTime(type==='call'?440:hz*.74,t+.28);
  gain.gain.setValueAtTime(.001,t);gain.gain.exponentialRampToValueAtTime(level,t+.035);gain.gain.exponentialRampToValueAtTime(.001,t+.35);
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(audio.destination);osc.start(t);osc.stop(t+.38);

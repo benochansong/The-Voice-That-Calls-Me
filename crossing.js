@@ -142,9 +142,9 @@ function fourthAction(){
 function appendFourthRecord(refs){
  const s=save.chapterStep;
  if(!['boarding','gale','hush'].includes(s))refs.append(' 제자들이 예수님을 깨웠고, 그분의 말씀에 풍랑이 잔잔해졌다(막 4:35–41).');
- if(s==='fourthEnd'||isFifth()||isSixth())refs.append(' 예수님이 떡 다섯 개와 물고기 두 마리를 축복하셨고 제자들이 나누어 주었다. 모두 먹고 남은 것은 열두 광주리였다(막 6:30–44).');
+ if(s==='fourthEnd'||isFifth()||(isSixth()||isSeventh()))refs.append(' 예수님이 떡 다섯 개와 물고기 두 마리를 축복하셨고 제자들이 나누어 주었다. 모두 먹고 남은 것은 열두 광주리였다(막 6:30–44).');
  if(save.shelter)by('memory').lastElementChild.append(save.shelter==='feet'?' 보리는 제자의 발 곁에서 웅크렸다.':' 보리는 감긴 밧줄 곁에서 몸을 낮췄다.');
- if(s==='fourthEnd'||isFifth()||isSixth())by('memory').lastElementChild.append(' 보리가 늦게 온 가족을 풀밭의 빈자리로 이끌었다.');
+ if(s==='fourthEnd'||isFifth()||(isSixth()||isSeventh()))by('memory').lastElementChild.append(' 보리가 늦게 온 가족을 풀밭의 빈자리로 이끌었다.');
  if(save.shoreMemory){
  const note=document.createElement('p');note.textContent='물가에서 들은 기억 · 야이로가 딸을 위해 찾아온 길에, 오래 앓던 여인이 예수님의 옷에 손을 대어 나았다. 예수님은 여인의 말을 들으신 뒤 야이로의 집으로 가서 딸의 손을 잡아 일으키셨다(막 5:21–43).';refs.after(note);
  }

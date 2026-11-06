@@ -13,7 +13,7 @@ const sixth={
  giveRoom:[-1.7,.15,'step','식탁보 아래로 다가오는 발소리','식탁 왼쪽으로 비켜 마리아에게 자리를 내주기','그 자리에서 몸 낮추기','bethany'],
  anoint:[-1.7,.15,'step','향유가 흐르는 소리','마리아가 예수님의 발에 향유를 붓는 모습 지켜보기','','bethany'],
  backToCity:[0,3.8,'step','저녁 바람에 움직이는 천','베다니의 문턱으로 돌아가기','회상을 마치고 예루살렘으로','bethany'],
- sixthEnd:[2.8,3.8,'step','예루살렘 저녁의 발소리','6장 끝 · 예루살렘의 저녁','여행 수첩 펼치기','court6']
+ sixthEnd:[2.8,3.8,'step','예루살렘 저녁의 발소리','6장 끝 · 예루살렘의 저녁','다락방 문턱으로 가기','court6']
 };
 Object.assign(laterBeats,sixth);
 function isSixth(){return Object.hasOwn(sixth,save.chapterStep)}
@@ -133,16 +133,15 @@ function sixthAction(){
  case 'flask':enterBeat('giveRoom');caption('향유를 든 마리아가 식탁 곁으로 다가온다. 왼쪽으로 비켜서면 발치까지 길이 열린다.',5);break;
  case 'giveRoom':enterBeat('anoint');pose='sit';poseEnd=clock+2;caption('회상 · 보리는 천이 드리운 자리에서 조용히 몸을 낮춘다.',2);break;
  case 'backToCity':enterBeat('sixthEnd',[2.8,0,3.8]);caption('회상이 끝났다. 다시 예루살렘의 저녁. 보리는 고요해진 뜰에 앉는다.',6);break;
- case 'sixthEnd':journal();break;
+ case 'sixthEnd':enterBeat('upperDoor',[0,0,6]);caption('제7장　빈자리 곁에서 · 문턱에 고인 물빛이 일렁인다.',5);break;
  }
 }
 function appendSixthRecord(refs){
- const s=save.chapterStep,area=sixth[s][6];
+ const s=save.chapterStep,area=sixth[s]?.[6];
  if(area!=='gates'){
  refs.append(' 예수님이 어린 나귀를 타고 예루살렘에 들어가시자 제자들이 찬양했다(눅 19:28–40).');
  by('memory').lastElementChild.append(save.entryView==='crowd'?' 보리는 길 가장자리에서 찬양하는 이들의 얼굴을 보았다.':' 보리는 길 가운데서 어린 나귀의 발굽을 따라갔다.');
  }
- if(['twilight','sixthEnd'].includes(s)||area==='bethany')refs.append(' 예수님은 두 렙돈을 넣은 과부가 자기 생활비 전부를 드렸다고 말씀하셨다(막 12:41–44).');
- if(s==='backToCity'||s==='sixthEnd'){refs.append(' 입성 전 베다니에서 마리아가 예수님의 발에 향유를 붓고 머리털로 닦았다(요 12:1–8).');by('memory').lastElementChild.append(' 보리는 그 저녁을 떠올리며 식탁 곁에서 마리아에게 길을 비켜 주었던 일을 기억했다.');}
+ if(isSeventh()||['twilight','sixthEnd'].includes(s)||area==='bethany')refs.append(' 예수님은 두 렙돈을 넣은 과부가 자기 생활비 전부를 드렸다고 말씀하셨다(막 12:41–44).');
+ if(isSeventh()||s==='backToCity'||s==='sixthEnd'){refs.append(' 입성 전 베다니에서 마리아가 예수님의 발에 향유를 붓고 머리털로 닦았다(요 12:1–8).');by('memory').lastElementChild.append(' 보리는 그 저녁을 떠올리며 식탁 곁에서 마리아에게 길을 비켜 주었던 일을 기억했다.');}
 }
-syncChapter();

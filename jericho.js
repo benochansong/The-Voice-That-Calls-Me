@@ -148,8 +148,8 @@ function fifthAction(){
 }
 function appendFifthRecord(refs){
  const s=save.chapterStep,b=fifth[s];
- if(isSixth()||s==='embers'||b[6]==='fold'||b[6]==='jericho')refs.append(' 선한 사마리아인은 다친 여행자를 돌보고 여관 주인에게 부탁했다(눅 10:25–37).');
+ if((isSixth()||isSeventh())||s==='embers'||b[6]==='fold'||b[6]==='jericho')refs.append(' 선한 사마리아인은 다친 여행자를 돌보고 여관 주인에게 부탁했다(눅 10:25–37).');
  if(save.lostParable)refs.append(' 목자가 잃은 양 한 마리를 찾고 기뻐하는 비유도 들었다(눅 15:3–7).');
- if(isSixth()||b[6]==='jericho'&&!['outcry','called'].includes(s))refs.append(' 예수님은 바디매오를 부르시고 그의 청을 들으셨다. 그가 보게 되어 따랐다(막 10:46–52).');
- if(isSixth()||s==='fifthEnd'){refs.append(' 삭개오는 예수님을 맞으며 나눔과 배상을 약속했다(눅 19:1–10).');by('memory').lastElementChild.append(' 보리는 나무 아래 자리를 비우고 저녁 식탁까지 걸어왔다.');}
+ if((isSixth()||isSeventh())||b[6]==='jericho'&&!['outcry','called'].includes(s))refs.append(' 예수님은 바디매오를 부르시고 그의 청을 들으셨다. 그가 보게 되어 따랐다(막 10:46–52).');
+ if((isSixth()||isSeventh())||s==='fifthEnd'){refs.append(' 삭개오는 예수님을 맞으며 나눔과 배상을 약속했다(눅 19:1–10).');by('memory').lastElementChild.append(' 보리는 나무 아래 자리를 비우고 저녁 식탁까지 걸어왔다.');}
 }
