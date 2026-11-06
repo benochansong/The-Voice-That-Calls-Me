@@ -133,6 +133,8 @@ function updateChapter(dt){
  if(s==='healing'&&beatTime>10.5){enterBeat('end');caption('그는 모두가 보는 앞에서 자리를 들고 걸어 나갔다.　막 2:1–12',6)}
 }
 function chapterCamera(){
+ if(save.chapterStep==='twoCoins'){camera.position.set(-1.45,1.6,.8);camera.lookAt(-2.88,1,-1.2)}
+ if(save.chapterStep==='anoint'){camera.position.set(-1.25,.82,.65);camera.lookAt(.32,.37,-1.22)}
  const s=save.chapterStep;
  if(s==='lowering'){camera.position.set(5.4,8,-.1);camera.lookAt(0,1.8,-3.25)}
  if(s==='healing'){camera.position.set(1.3,1.95,.92);camera.lookAt(0,1,-3)}

@@ -19,7 +19,7 @@ const fifth={
  welcome:[1.1,-2.2,'call','나무 아래의 부름','삭개오가 내려오는 모습 바라보기','','jericho'],
  supperDoor:[-3.5,-5,'step','집 안의 저녁 식사 소리','삭개오의 집 문간으로 따라가기','저녁 식탁 곁에 앉기','jericho'],
  pledge:[-3.5,-5,'call','삭개오의 목소리','저녁 식탁에서 삭개오의 말 듣기','','jericho'],
- fifthEnd:[-3.5,-5,'step','저녁 골목의 발소리','5장 끝 · 삭개오의 집','여행 수첩 펼치기','jericho']
+ fifthEnd:[-3.5,-5,'step','저녁 골목의 발소리','5장 끝 · 삭개오의 집','예루살렘으로 떠나기','jericho']
 };
 Object.assign(laterBeats,fifth);
 function isFifth(){return Object.hasOwn(fifth,save.chapterStep)}
@@ -143,14 +143,13 @@ function fifthAction(){
  case 'tree':enterBeat('roomTree');caption('사람들 위로 삭개오가 보인다. 나무 왼쪽으로 비켜서면 그가 내려올 공간이 있다.',4);break;
  case 'roomTree':enterBeat('welcome');caption('예수님이 위를 올려다보고 삭개오의 이름을 부르시며 오늘 그의 집에 머물겠다고 하신다.',5);break;
  case 'supperDoor':enterBeat('pledge');caption('식탁에 모인 사람들 사이에서 삭개오가 직접 일어나 자신의 결정을 말한다.',5);break;
- case 'fifthEnd':journal();break;
+ case 'fifthEnd':enterBeat('ridge',[0,0,7]);caption('제6장　성으로 들어가는 길 · 올리브 산에서 예루살렘으로 내려가는 길에 제자들의 찬양이 들린다.',6);break;
  }
 }
 function appendFifthRecord(refs){
  const s=save.chapterStep,b=fifth[s];
- if(s==='embers'||b[6]==='fold'||b[6]==='jericho')refs.append(' 선한 사마리아인은 다친 여행자를 돌보고 여관 주인에게 부탁했다(눅 10:25–37).');
+ if(isSixth()||s==='embers'||b[6]==='fold'||b[6]==='jericho')refs.append(' 선한 사마리아인은 다친 여행자를 돌보고 여관 주인에게 부탁했다(눅 10:25–37).');
  if(save.lostParable)refs.append(' 목자가 잃은 양 한 마리를 찾고 기뻐하는 비유도 들었다(눅 15:3–7).');
- if(b[6]==='jericho'&&!['outcry','called'].includes(s))refs.append(' 예수님은 바디매오를 부르시고 그의 청을 들으셨다. 그가 보게 되어 따랐다(막 10:46–52).');
- if(s==='fifthEnd'){refs.append(' 삭개오는 예수님을 맞으며 나눔과 배상을 약속했다(눅 19:1–10).');by('memory').lastElementChild.append(' 보리는 나무 아래 자리를 비우고 저녁 식탁까지 걸어왔다.');}
+ if(isSixth()||b[6]==='jericho'&&!['outcry','called'].includes(s))refs.append(' 예수님은 바디매오를 부르시고 그의 청을 들으셨다. 그가 보게 되어 따랐다(막 10:46–52).');
+ if(isSixth()||s==='fifthEnd'){refs.append(' 삭개오는 예수님을 맞으며 나눔과 배상을 약속했다(눅 19:1–10).');by('memory').lastElementChild.append(' 보리는 나무 아래 자리를 비우고 저녁 식탁까지 걸어왔다.');}
 }
-syncChapter();

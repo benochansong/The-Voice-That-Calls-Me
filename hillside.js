@@ -79,6 +79,7 @@ function syncLater(){
  for(const [key,set] of Object.entries(laterSets))set.visible=b?.[6]===key;
  document.body.classList.toggle('parable',b?.[6]==='field');
  if(!b)return false;
+ if(isSixth())return syncSixth(b);
  if(isFifth())return syncFifth(b);
  if(isFourth())return syncFourth(b);
  const area=b[6];
@@ -87,6 +88,7 @@ function syncLater(){
  return true;
 }
 function chapterSounds(){
+ if(isSixth())return sixthSounds();
  if(isFifth())return fifthSounds();
  const cues=[chapterCue()];
  if(save.chapterStep==='climb'&&!save.hillChild)cues.push([4.5,3.7,'cry','아이의 훌쩍임']);
@@ -95,6 +97,7 @@ function chapterSounds(){
 }
 function laterBlocked(x,z){
  const area=laterBeats[save.chapterStep][6];
+ if(isSixth())return sixthBlocked(x,z);
  if(isFifth())return fifthBlocked(x,z);
  if(isFourth())return fourthBlocked(x,z);
  if(area==='field')return Math.abs(x)>6||z>5.95||z< -9.95;
@@ -103,6 +106,7 @@ function laterBlocked(x,z){
 }
 function updateLater(dt){
  const s=save.chapterStep,b=laterBeats[s],p=sheep.position,area=b[6];
+ if(isSixth()){updateSixth(dt);return}
  if(isFifth()){updateFifth(dt);return}
  if(isFourth()){updateFourth(dt);return}
  p.y=area==='hill'?hillHeight(p.z):0;
@@ -128,6 +132,7 @@ function updateLater(dt){
 }
 function laterAction(){
  const s=save.chapterStep,b=laterBeats[s];
+ if(isSixth()){sixthAction();return}
  if(isFifth()){fifthAction();return}
  if(isFourth()){fourthAction();return}
  if(s==='climb'&&!save.hillChild&&distance(4.5,3.7)<1.65){
@@ -155,9 +160,10 @@ function appendLaterRecord(refs){
  const b=laterBeats[save.chapterStep];if(!b)return;
  if(save.tableSeat){refs.append(' 예수님은 레위를 부르시고 세리들과 식사하셨다(막 2:13–17).');
  by('memory').lastElementChild.append(save.tableSeat==='court'?' 보리는 레위의 집 왼쪽 안뜰에 누웠다.':' 보리는 장사꾼이 놓아 준 물그릇 옆에 누웠다.');}
- if(isFifth()||isFourth()||['lake','boatTalk','pathSeed','stoneSeed','thornSeed','harvest','returnLake','hillEnd'].includes(save.chapterStep)){
+ if(isSixth()||isFifth()||isFourth()||['lake','boatTalk','pathSeed','stoneSeed','thornSeed','harvest','returnLake','hillEnd'].includes(save.chapterStep)){
  refs.append(' 산에서 팔복과 들꽃에 관해 가르치셨다(마 5:1–12, 6:25–34).');by('memory').lastElementChild.append(save.hillChild?' 아이와 함께 비탈에 앉았다.':' 보리는 언덕 위로 곧장 올라갔다.');}
- if(isFifth()||isFourth())appendFourthRecord(refs);
- if(isFifth())appendFifthRecord(refs);
- if(isFifth()||isFourth()||save.chapterStep==='hillEnd')refs.append(' 호숫가에서 씨 뿌리는 사람의 비유를 들려주셨다(막 4:1–20).');
+ if(isSixth()||isFifth()||isFourth())appendFourthRecord(refs);
+ if(isSixth()||isFifth())appendFifthRecord(refs);
+ if(isSixth())appendSixthRecord(refs);
+ if(isSixth()||isFifth()||isFourth()||save.chapterStep==='hillEnd')refs.append(' 호숫가에서 씨 뿌리는 사람의 비유를 들려주셨다(막 4:1–20).');
 }
