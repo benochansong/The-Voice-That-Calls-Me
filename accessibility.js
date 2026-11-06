@@ -26,7 +26,7 @@ function musicAudible(){return !prefs.mute&&prefs.musicVolume>0}
 function updateMusicLevel(listening){
  scoreListening=listening;
  if(!musicGain)return;
- const foreground=listening||(prefs.voiceVolume>0&&window.speechSynthesis?.speaking);
+ const foreground=listening||(prefs.voiceVolume>0&&dialogueIsAudible());
  const target=musicAudible()?prefs.musicVolume/100*(foreground ? .10 : 1):0;
  if(target===lastMusicTarget)return;
  const now=audio.currentTime;
@@ -51,21 +51,20 @@ function applyPlayerPreferences(){
  by('ambientLevel').value=prefs.ambientVolume+'%';
  by('musicLevel').value=prefs.musicVolume+'%';
  for(const id of ['voiceVolume','ambientVolume','musicVolume'])by(id).setAttribute('aria-valuetext',prefs[id]+'%');
- by('sampleVoice').disabled=prefs.mute||prefs.voiceVolume===0||!window.speechSynthesis;
+ by('sampleVoice').disabled=prefs.mute||prefs.voiceVolume===0;
  by('sampleAmbient').disabled=!environmentAudible();
  if(!prefs.directionCaptions)setDirectionCue('');
  if(environmentGain)environmentGain.gain.value=prefs.mute?0:prefs.ambientVolume/100;
+ setDialogueVolume();
  updateMusicLevel(scoreListening);
 }
 function settings(event){
- const oldVoice=prefs.voiceVolume;
  for(const key of Object.keys(prefs)){
   const control=by(key);
   prefs[key]=control.type==='checkbox'?control.checked:Number(control.value);
  }
  applyPlayerPreferences();
  if(event?.isTrusted)awaken();
- if(prefs.mute||prefs.voiceVolume!==oldVoice)window.speechSynthesis?.cancel();
  try{localStorage.setItem('boriPrefs',JSON.stringify(prefs))}catch{}
 }
 for(const key of Object.keys(prefs)){
@@ -92,26 +91,34 @@ function awaken(){
  }catch{}
 }
 by('menu').addEventListener('click',awaken);
-function voice(text){
- if(prefs.mute||!prefs.voiceVolume||!window.speechSynthesis)return;
- const utterance=new SpeechSynthesisUtterance(text);
- utterance.lang='ko-KR';utterance.rate=.82;utterance.volume=prefs.voiceVolume/100;
- speechSynthesis.speak(utterance);
-}
+function voice(text,role='jesus',offsetSeconds=0){playDialogueAudio(text,role,offsetSeconds)}
 const cueDirections=['앞','오른쪽 앞','오른쪽','오른쪽 뒤','뒤','왼쪽 뒤','왼쪽','왼쪽 앞'];
 function cueDirection(angle){return cueDirections[(Math.round(angle/(Math.PI/4))+8)%8]}
 
-const storyCaption=by('caption');
-// At large text sizes a long passage can need its own scroll area on a small screen.
-new ResizeObserver(()=>{
- if(storyCaption.scrollHeight>storyCaption.clientHeight)storyCaption.tabIndex=0;
- else storyCaption.removeAttribute('tabindex');
-}).observe(storyCaption);
-storyCaption.addEventListener('keydown',event=>{
- if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End','Space'].includes(event.code))event.stopPropagation();
+// The hint and location can wrap to several lines on a narrow display.
+const hudBounds=new ResizeObserver(entries=>{
+ for(const entry of entries){
+  const height=entry.borderBoxSize[0].blockSize;
+  document.documentElement.style.setProperty('--hud-'+entry.target.localName,Math.ceil(height)+'px');
+ }
 });
+hudBounds.observe(document.querySelector('header'));
+hudBounds.observe(document.querySelector('footer'));
+// Keep each caption keyboard-scrollable when enlarged text no longer fits.
+const storyCaption=by('caption');
+const captionScroll=new ResizeObserver(entries=>{
+ for(const {target} of entries){
+  if(target.scrollHeight>target.clientHeight)target.tabIndex=0;
+  else target.removeAttribute('tabindex');
+ }
+});
+for(const panel of [storyCaption,by('characterLine')]){
+ captionScroll.observe(panel);
+ panel.addEventListener('keydown',event=>{
+  if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End','Space'].includes(event.code))event.stopPropagation();
+ });
+}
 by('sampleVoice').onclick=()=>{
- window.speechSynthesis?.cancel();
  voice('보리야');
 };
 by('sampleAmbient').onclick=()=>{

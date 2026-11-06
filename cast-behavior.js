@@ -64,6 +64,10 @@ function updateCast(dt){
    speaker=nativitySet.tinyHand;listener=null;
   }
  }else if(!step&&sceneTime>=0){speaker=standingGiver;listener=sceneTime<4?fishers[0]:fishers[2]}
+ // When a listener answers, the others follow the reply rather than the previous speaker.
+ if(listener&&speakingLine?.figure===listener&&speakingLine.scene===sceneDialogueKey()){
+  const previous=speaker;speaker=listener;listener=previous;
+ }
  if(speaker)eyeLevel(speaker,speakerPoint);
  if(listener)eyeLevel(listener,listenerPoint);
  if(step==='climb'||step==='flowers')eyeLevel(mountTeacher,listenerPoint);

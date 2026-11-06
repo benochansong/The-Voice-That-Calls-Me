@@ -17,7 +17,7 @@ const storyPeople=(()=>{
  function tint(color,ratio){return new THREE.Color(color).multiplyScalar(ratio).getHex()}
 
  class PaintedMesh {
-  constructor(){this.positions=[];this.normals=[];this.colors=[];this.indices=[]}
+  constructor(){this.positions=[];this.normals=[];this.colors=[];this.indices=[];this.lipWeights=[];this.chinWeights=[]}
   part(shape,color,x,y,z,w,h,d,rx=0,ry=0,rz=0){
    rotation.setFromEuler(angles.set(rx,ry,rz));
    matrix.compose(position.set(x,y,z),rotation,scale.set(w,h,d));
@@ -126,13 +126,51 @@ const storyPeople=(()=>{
   });
   if(kneeling)body.part(gatheredSkirt,c.robe,0,0,.048,1,1,1);
  }
+ // Separate upper and lower pigment bands share an inner edge at rest. During a vowel,
+ // that edge opens into a curved, shaded mouth; the corners stay attached to the cheeks.
+ function paintLips(body,c,cy,z){
+  const teacher=c.role==='teacher',width=teacher?.068:.063;
+  const baseY=cy-.087,front=z+(teacher?.192:.177);
+  const upper=new THREE.Color(c.skin).lerp(new THREE.Color(0x884946),.60);
+  const lower=new THREE.Color(c.skin).lerp(new THREE.Color(0xc07b71),.56);
+  const inside=new THREE.Color(0x633833);
+  function band(yTop,yBottom,topJoint,bottomJoint,color,depth){
+   const start=body.positions.length/3,sections=12;
+   for(let i=0;i<=sections;i++){
+    const t=2*i/sections-1,round=1-t*t,side=t<0?'leftCorner':'rightCorner';
+    const crease=.002*t*t,zz=front-.014*t*t+depth;
+    // An elliptical aperture keeps rounded vowels from pinching into a diamond.
+    const cornerWeight=1-Math.sqrt(round);
+    const x=t*width;
+    for(const [height,bone] of [[yTop,topJoint],[yBottom,bottomJoint]]){
+     body.lipWeights.push([body.positions.length/3,bone,side,cornerWeight]);
+     const arch=height>.002?1-.28*Math.exp(-t*t/.035):1;
+     body.positions.push(x,baseY+crease+height*round*arch,zz);
+     body.normals.push(t*.33,.12,1);
+     body.colors.push(color.r,color.g,color.b);
+    }
+    if(i){const k=start+i*2;body.indices.push(k-2,k-1,k,k,k-1,k+1)}
+   }
+  }
+  band(.008,.0015,'upperLip','upperLip',upper,.0006);
+  band(.0015,.0012,'upperLip','upperInside',new THREE.Color(0xbd9280),.0004);
+  band(.0012,-.0015,'upperInside','lowerLip',inside,0);
+  band(-.0015,-.011,'lowerLip','lowerLip',lower,.0008);
+ }
  function face(body,c,cy,eyes=(side,part,paintEye)=>paintEye()){
   const x=0,z=cy<1.3?.105:0;
   const hood=c.role==='angel'||c.role==='veil'||(c.role==='traveler'&&(c.style===1||c.style===4));
   const teacher=c.role==='teacher';
   const back=hood?c.sash:c.hair;
   body.oval(back,x,cy+.016,z-.045,.234,.267,.187);
-  body.oval(c.skin,x,cy,z,.203,.241,.174);
+  function chinSurface(drawSurface){
+   const start=body.positions.length/3;drawSurface();
+   for(let i=start;i<body.positions.length/3;i++){
+    const weight=THREE.MathUtils.smoothstep(cy-body.positions[i*3+1],.082,.205);
+    if(weight>0)body.chinWeights.push([i,weight]);
+   }
+  }
+  chinSurface(()=>body.oval(c.skin,x,cy,z,.203,.241,.174));
   for(const side of [-1,1]){
    body.detail(c.skin,side*.195,cy-.012,z,.043,.061,.038);
    body.detail(tint(c.skin,.86),side*.209,cy-.017,z+.007,.019,.032,.03);
@@ -142,16 +180,16 @@ const storyPeople=(()=>{
     body.detail(0x332921,eyeX,cy+.023,z+.174,.022,.023,.012,0,side*.25);
     body.detail(0xffe7bd,eyeX-.006,cy+.03,z+.184,.006,.006,.004);
    });
-   body.link(c.hair,[side*.043,cy+.066,z+.168],[side*.126,cy+.068,z+.139],.013,.013);
-   body.detail(tint(c.skin,.92),side*.117,cy-.03,z+.132,.036,.016,.01,0,side*.37);
+   eyes(side,'brow',()=>body.link(c.hair,[side*.043,cy+.066,z+.168],[side*.126,cy+.068,z+.139],.013,.013));
+   eyes(side,'cheek',()=>body.detail(tint(c.skin,.94),side*.117,cy-.03,z+.132,.038,.018,.011,0,side*.37));
   }
   body.detail(c.skin,x,cy-.013,z+.176,.042,.061,.041,-.1);
   if(teacher){
-   body.oval(c.hair,0,cy-.116,z+.035,.177,.145,.141);
-   body.detail(c.skin,0,cy-.084,z+.159,.076,.032,.026);
+   chinSurface(()=>body.oval(c.hair,0,cy-.116,z+.035,.177,.145,.141));
+   chinSurface(()=>body.detail(c.skin,0,cy-.084,z+.159,.076,.032,.026));
    body.detail(tint(c.hair,.87),0,cy-.056,z+.166,.077,.016,.018);
   }
-  body.link(0x865544,[-.046,cy-.087,z+.157],[.043,cy-.087,z+.163],.009,.011);
+  paintLips(body,c,cy,z);
   body.oval(back,0,cy+.157,z-.024,.231,.135,.193);
   if(hood){
    for(const side of [-1,1]){
@@ -191,6 +229,31 @@ const storyPeople=(()=>{
   limbs.push({side,arm,forearm,hand,thigh,shin,shoe,lid,iris});
  }
  const figures=new WeakMap();
+ function addFaceJoints(add,parent,cy,z){
+  const channels={};
+  function at(name,x,y,depth){channels[name]=add(name,parent,x,cy+y,z+depth)}
+  at('jaw',0,-.034,.025);
+  at('upperLip',0,-.086,.174);at('upperInside',0,-.086,.174);at('lowerLip',0,-.090,.174);
+  for(const side of [-1,1]){
+   const prefix=side<0?'left':'right';
+   at(prefix+'Corner',side*.064,-.085,.162);
+   at(prefix+'Brow',side*.083,.067,.152);
+   at(prefix+'Cheek',side*.117,-.03,.132);
+  }
+  return channels;
+ }
+ const faceJoints=addFaceJoints(joint,neck,1.536,0);
+ function markingBone(side,part,channels,eye){
+  if(part==='lid'||part==='iris')return eye[part];
+  return channels[(side<0?'left':'right')+(part==='brow'?'Brow':'Cheek')];
+ }
+ function bindLipAndChin(body,channels,headBone,ids,weights){
+  function blend(i,a,b,mix){
+   const k=i*4;ids[k]=a;ids[k+1]=b;weights[k]=1-mix;weights[k+1]=mix;
+  }
+  for(const [i,center,corner,mix] of body.lipWeights)blend(i,channels[center],channels[corner],mix);
+  for(const [i,mix] of body.chinWeights)blend(i,headBone,channels.jaw,mix);
+ }
  function draw(geometry){
   const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=true;mesh.receiveShadow=true;return mesh;
  }
@@ -205,7 +268,7 @@ const storyPeople=(()=>{
   dress(b,c,false,(side,part)=>section(fromSide(side).shoe,part));
   const robeEnd=b.positions.length/3;
   const faceStart=robeEnd;
-  face(b,c,1.536,(side,part,paintEye)=>section(fromSide(side)[part],paintEye));
+  face(b,c,1.536,(side,part,paintEye)=>section(markingBone(side,part,faceJoints,fromSide(side)),paintEye));
   const faceEnd=b.positions.length/3;
   for(const limb of limbs){
    const {side}=limb;
@@ -244,6 +307,7 @@ const storyPeople=(()=>{
    weight(i,limb.arm,limb.forearm,below);
   }
   for(const {first,last,bone} of ranges)for(let i=first;i<last;i++)weight(i,bone);
+  bindLipAndChin(b,faceJoints,neck,ids,weights);
   geo.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(ids,4));
   geo.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
   return geo;
@@ -286,9 +350,18 @@ const storyPeople=(()=>{
   dress(body,c,true);body.oval(c.robe,0,.68,.012,.264,.322,.197,-.17);
   body.ribbon(c.sash,[[-.14,.95,.108,.045],[-.09,.873,.176,.06],[0,.783,.229,.065],[.09,.689,.223,.063],[.16,.587,.219,.047],[.177,.45,.275,.035]]);
   const portrait=new PaintedMesh(),eyeRanges=[];
-  face(portrait,c,1.13,(_side,part,paintEye)=>{
+  const faceRoot=new THREE.Bone(),lids=new THREE.Bone(),pupils=new THREE.Bone();
+  lids.name='offering-eyelids';pupils.name='offering-pupils';
+  lids.position.set(0,.204,.222);faceRoot.add(lids);lids.add(pupils);
+  const portraitBones=[faceRoot,lids,pupils];
+  const portraitJoints=addFaceJoints((name,parent,x,y,z)=>{
+   const bone=new THREE.Bone();bone.name=name;bone.position.set(x,y,z);
+   portraitBones[parent].add(bone);return portraitBones.push(bone)-1;
+  },0,.18,.060);
+  const eyeBones={lid:1,iris:2};
+  face(portrait,c,1.13,(side,part,paintEye)=>{
    const from=portrait.positions.length/3;paintEye();
-   eyeRanges.push([from,portrait.positions.length/3,part==='iris'?2:1]);
+   eyeRanges.push([from,portrait.positions.length/3,markingBone(side,part,portraitJoints,eyeBones)]);
   });
   for(const side of [-1,1]){
    body.sleeve(c.robe,[[side*.18,.893,.033,.073,.074],[side*.24,.85,.057,.098,.11],[side*.305,.758,.157,.094,.105],[side*.307,.703,.211,.09,.089]]);
@@ -310,15 +383,13 @@ const storyPeople=(()=>{
   const count=headShape.getAttribute('position').count,ids=new Uint16Array(count*4),weights=new Float32Array(count*4);
   for(let i=0;i<count;i++)weights[i*4]=1;
   for(const [from,to,bone] of eyeRanges)for(let i=from;i<to;i++)ids[i*4]=bone;
+  bindLipAndChin(portrait,portraitJoints,0,ids,weights);
   headShape.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(ids,4));
   headShape.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
   const head=new THREE.SkinnedMesh(headShape,material);
   head.castShadow=head.receiveShadow=true;
-  const faceRoot=new THREE.Bone(),lids=new THREE.Bone(),pupils=new THREE.Bone();
-  lids.name='offering-eyelids';pupils.name='offering-pupils';
-  lids.position.set(0,.204,.222);head.add(faceRoot);faceRoot.add(lids);lids.add(pupils);
-  head.updateMatrixWorld(true);head.bind(new THREE.Skeleton([faceRoot,lids,pupils]));
-  offeringEyes.set(head,{lids,pupils});
+  head.add(faceRoot);head.updateMatrixWorld(true);head.bind(new THREE.Skeleton(portraitBones));
+  offeringEyes.set(head,{lids,pupils,bones:portraitBones,channels:portraitJoints});
   head.position.set(0,.95,.045);
   return [draw(body.finish()),draw(hands.finish()),head];
  }
@@ -328,7 +399,59 @@ const storyPeople=(()=>{
   eyes.pupils.position.x+=(THREE.MathUtils.clamp(yawError,-1,1)*.016-eyes.pupils.position.x)*follow;
   eyes.pupils.position.y+=(-THREE.MathUtils.clamp(pitchError,-.7,.7)*.016-eyes.pupils.position.y)*follow;
   const blink=Math.max(0,1-Math.abs(time%4.7-3.85)/.11);
-  eyes.lids.scale.y=1-.93*blink;
+  eyes.lids.scale.y=(1-.93*blink)*(1-(eyes.expression?.squint||0));
+ }
+ // Lip shapes move much sooner than the eyebrows. A consonant can close the
+ // mouth while the character still looks concerned about the person nearby.
+ const moods={
+  calm:   {brow:0,     tilt:0,    smile:.001, squint:0},
+  warm:   {brow:.004,  tilt:-.03, smile:.011, squint:.07},
+  joy:    {brow:.014,  tilt:.035, smile:.018, squint:.13},
+  concern:{brow:.004,  tilt:-.18, smile:-.005,squint:.04},
+  sorrow: {brow:-.002, tilt:-.23, smile:-.010,squint:.12},
+  wonder: {brow:.022,  tilt:-.05, smile:.002, squint:-.065},
+  resolve:{brow:-.007, tilt:.13,  smile:-.002,squint:.08}
+ };
+ function createExpression(bones,channels){
+  const nodes={};
+  for(const [name,i] of Object.entries(channels)){
+   const bone=bones[i];nodes[name]={bone,rest:bone.position.clone()};
+  }
+  return {nodes,open:0,round:0,wide:0,brow:0,tilt:0,smile:0,squint:0};
+ }
+ function dialogueFace(figure,dt,pose){
+  if(!figure)return false;
+  const portrait=offeringEyes.get(figure),record=figures.get(figure);
+  const rig=portrait||(pose?rigFor(figure):record?.rig);
+  if(!rig||(!pose&&!rig.expression))return false;
+  const state=rig.expression||(rig.expression=createExpression(rig.bones,portrait?.channels||faceJoints));
+  const clamp=THREE.MathUtils.clamp,frame=clamp(dt,0,.1);
+  const targetOpen=clamp(pose?.open||0,0,1);
+  const lips=1-Math.exp(-frame*(targetOpen<state.open?42:28)),faceEase=1-Math.exp(-frame*8);
+  state.open+=(targetOpen-state.open)*lips;
+  state.round+=(clamp(pose?.round||0,0,1)-state.round)*lips;
+  state.wide+=(clamp(pose?.wide||0,0,1)-state.wide)*lips;
+  const mood=moods[pose?.emotion]||moods.calm,amount=pose?clamp(pose.strength??1,0,1):0;
+  state.brow+=(mood.brow*amount-state.brow)*faceEase;state.tilt+=(mood.tilt*amount-state.tilt)*faceEase;
+  state.smile+=(mood.smile*amount-state.smile)*faceEase;state.squint+=(mood.squint*amount-state.squint)*faceEase;
+  const {jaw,upperLip,upperInside,lowerLip}=state.nodes;
+  const width=.25*state.wide-.34*state.round,depth=.009*state.round;
+  jaw.bone.rotation.x=.093*state.open;
+  jaw.bone.position.y=jaw.rest.y-.007*state.open;
+  upperLip.bone.position.set(upperLip.rest.x,upperLip.rest.y+.009*state.open,upperLip.rest.z+depth);
+  lowerLip.bone.position.set(lowerLip.rest.x,lowerLip.rest.y-.047*state.open,lowerLip.rest.z+depth);
+  const innerEdge=.009*state.open*(.4+state.wide)*(1-.75*state.round);
+  upperInside.bone.position.copy(upperLip.bone.position);upperInside.bone.position.y-=innerEdge;
+  upperLip.bone.scale.x=upperInside.bone.scale.x=lowerLip.bone.scale.x=1+width;
+  for(const side of [-1,1]){
+   const key=side<0?'left':'right',corner=state.nodes[key+'Corner'],brow=state.nodes[key+'Brow'],cheek=state.nodes[key+'Cheek'];
+   corner.bone.position.set(corner.rest.x+side*(.061*width+Math.max(0,state.smile)*.32),
+    corner.rest.y+state.smile-.019*state.open,corner.rest.z+depth*.5);
+   brow.bone.position.y=brow.rest.y+state.brow;brow.bone.rotation.z=side*state.tilt;
+   cheek.bone.position.y=cheek.rest.y+state.smile*.65;
+  }
+  return !!pose||state.open>.001||state.round>.001||state.wide>.001||
+   Math.abs(state.smile)>.0001||Math.abs(state.squint)>.001||Math.abs(state.tilt)>.001;
  }
  const localTarget=new THREE.Vector3(),axis=new THREE.Vector3(),bend=new THREE.Vector3(),towardElbow=new THREE.Vector3(),towardTip=new THREE.Vector3();
  const desiredUpper=new THREE.Quaternion(),desiredLower=new THREE.Quaternion(),desiredHand=new THREE.Quaternion();
@@ -397,7 +520,7 @@ const storyPeople=(()=>{
   const blink=Math.max(0,1-Math.abs((rig.elapsed%4.7)-4.39)/.11);
   for(const limb of limbs){
    const side=limb.side,lid=bones[limb.lid],iris=bones[limb.iris];
-   lid.scale.y=1-.93*blink;
+   lid.scale.y=(1-.93*blink)*(1-(rig.expression?.squint||0));
    const residual=yaw-body.rotation.y-head.rotation.y;
    iris.position.x+=(THREE.MathUtils.clamp(residual*1.1,-1,1)*.016-iris.position.x)*rate(30);
    const irisY=-THREE.MathUtils.clamp(pitch-body.rotation.x-head.rotation.x,-.65,.65)*.016;
@@ -449,7 +572,7 @@ const storyPeople=(()=>{
    rig.bones[limbs[0].forearm].rotation.x=-.32*rig.greeting;
   }
  }
- return {build,buildKneeling,animate,palm,greeting,attach,updateEyes,
+ return {build,buildKneeling,animate,palm,greeting,attach,updateEyes,dialogueFace,
   isPerson:figure=>figures.has(figure),
   posedThisFrame:figure=>figures.get(figure)?.rig?.lastPose===clock};
 })();
@@ -460,3 +583,4 @@ const isStoryPerson=storyPeople.isPerson,personPosedThisFrame=storyPeople.posedT
 const setGreetingHand=storyPeople.greeting;
 const bindPersonAccessory=storyPeople.attach;
 const updateOfferingEyes=storyPeople.updateEyes;
+const applyDialogueFace=storyPeople.dialogueFace;

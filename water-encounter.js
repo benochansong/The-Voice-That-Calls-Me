@@ -66,7 +66,7 @@ function updateWaterMeeting(dt){
  meeting.speed=Math.hypot(p.x-oldX,p.z-oldZ)/dt;
  if(progress>=.55&&!save.drank){
   save.drank=true;checkpoint();
-  caption('예수님　“보리야.”',4);voice('보리야');
+  callBori(offeringFace);
  }
  if(progress>=1){waterMeeting=null;walkingToLake=true;lakeWaypoint=0;lakeWalkTime=0}
 }

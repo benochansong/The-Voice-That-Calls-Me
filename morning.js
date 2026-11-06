@@ -145,7 +145,7 @@ function updateEighth(dt){
  if(s==='openTomb'&&t>=10)enterBeat('tears');
  if(s==='herName'&&t>=15)enterBeat('newsPath');
  if(s==='testimony'&&t>=9){
- enterBeat('calledHome');caption('예수님　“보리야.”',7);voice('보리야');
+  enterBeat('calledHome');callBori(gardener);
  }
  if(s==='calledHome'&&distance(-2.3,-3.8)<1.05){enterBeat('reunion');caption('첫날 물을 건네던 손이 다시 보리의 눈높이로 내려온다.',5)}
  if(s==='reunion'&&t>=5.5)enterBeat('galilee');

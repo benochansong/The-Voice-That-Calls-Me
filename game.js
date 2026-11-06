@@ -127,7 +127,7 @@ function ping(type,side,level){
  gain.gain.setValueAtTime(.001,t);gain.gain.exponentialRampToValueAtTime(level,t+.035);gain.gain.exponentialRampToValueAtTime(.001,t+.35);
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(environmentGain);osc.start(t);osc.stop(t+.38);
 }
-function journal(){keys.clear();listen=false;setDirectionCue('');
+function journal(){pauseCharacterLine();keys.clear();listen=false;setDirectionCue('');
  by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();prepareChapterMenu();by('book').showModal();by('book').scrollTop=0}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
 by('restart').onclick=()=>{if(replaying)return;if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
@@ -195,7 +195,7 @@ window.addEventListener('pagehide',stopScore);
 let prev=performance.now(),padA=false,padLT=false,padMoving=false;
 function loop(now){
  requestAnimationFrame(loop);const dt=T.MathUtils.clamp((now-prev)/1000,.00001,.05);prev=now;
- if(by('book').open){playSceneMusic();return}
+ if(document.hidden||by('book').open){playSceneMusic();return}
  clock+=dt;
  const pad=Array.from(navigator.getGamepads?.()||[]).find(Boolean),axis=i=>Math.abs(pad?.axes[i]||0)>.16?pad.axes[i]:0;
  const usingStick=Boolean(axis(0)||axis(1)||axis(2));
@@ -216,7 +216,7 @@ function loop(now){
  if(p.x!==lastX||p.z!==lastZ)sheep.rotation.y=Math.atan2(lastX-p.x,lastZ-p.z);
  }
  if(!listen)setDirectionCue('');
- if(save.prologue){updateNativity(dt,move);updateCast(dt);playSceneMusic();renderer.render(scene,camera);return}
+ if(save.prologue){updateNativity(dt,move);updateCast(dt);updateCharacterDialogue(dt);playSceneMusic();renderer.render(scene,camera);return}
  if(!save.chapterStep){updateWaterMeeting(dt);updateMarketTeacher(dt)}
  const sitting=(pose==='sit'&&clock<poseEnd)||save.chapterStep==='credits'||
   (save.shelter&&['gale','hush'].includes(save.chapterStep));
@@ -254,6 +254,7 @@ function loop(now){
  by('hint').textContent=save.done?'E · 시몬의 집으로 동행하기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
  if(save.chapterStep)updateChapter(dt);
  updateCast(dt);
+ updateCharacterDialogue(dt);
  if(waterMeeting)by('hint').textContent=save.drank?'예수님 곁에서 숨 고르기':'손 가까이 다가가기 · 물러서면 멈춤';
  if(chapterReplay)showReplayExitHint();
  // Follow the actual terrain height. On deck, scale only the rocking component of the camera, not the hull or the player's footing.
