@@ -94,7 +94,7 @@ function ping(type,side,level){
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(audio.destination);osc.start(t);osc.stop(t+.38);
 }
 function journal(){keys.clear();listen=false;
- by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';by('book').showModal()}
+ by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();by('book').showModal()}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
 by('restart').onclick=()=>{if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
 const distance=(x,z)=>Math.hypot(sheep.position.x-x,sheep.position.z-z);
@@ -102,7 +102,7 @@ function action(){
  if(by('book').open||clock<poseEnd||sceneTime>=0)return;
  if(!save.drank&&distance(.35,13.6)<2.5){save.drank=true;pose='drink';poseEnd=clock+2;sheep.rotation.y=0;caption('예수님　“보리야.”',4);voice('보리야');checkpoint()}
  else if(save.drank&&!save.done&&!save.child&&distance(5,-4)<2.5){save.child=true;pose='sit';poseEnd=clock+2.3;caption('아이가 끈을 풀고 보리 곁에 선다.');checkpoint()}
- else if(save.done)journal();
+ else if(save.done)chapterAction();
 }
 function earDown(){listen=prefs.toggle?!listen:true;nextTone=0}
 function earUp(){if(!prefs.toggle)listen=false}
@@ -113,11 +113,12 @@ renderer.domElement.onpointerdown=e=>{awaken();if(e.button===2)earDown();else dr
 onpointerup=e=>{drag=false;if(e.button===2)earUp()};oncontextmenu=e=>e.preventDefault();
 onpointermove=e=>{if(drag)yaw+=e.movementX*.006};
 function blocked(x,z){
+ if(save.chapterStep)return chapterBlocked(x,z);
  if(Math.abs(x)>7.8||z>20||z< -20||z< -14&&Math.abs(x)>2.2)return true;
  return walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.35&&Math.abs(z-cz)<d+.35)
 }
 function soundscape(){
- const sources=save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
+ const sources=save.chapterStep?[chapterCue()]:save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
  const audible=sources.map(([x,z,type,name])=>{
  let angle=Math.atan2(x-sheep.position.x,sheep.position.z-z)-yaw;
  angle=Math.atan2(Math.sin(angle),Math.cos(angle));return {angle,type,name,weight:(1.5+Math.cos(angle))/(3+distance(x,z))};
@@ -149,8 +150,8 @@ function loop(now){
  legs.forEach((l,i)=>l.rotation.x=move?Math.sin(clock*12+i%2*Math.PI+(i>1?Math.PI:0))*.45:0);
  if(save.drank&&!drinking){jesus.scale.y=1;jesus.position.x=save.done?0:-.6;jesus.position.z=save.done?-16:-13}
  if(save.done)fishers.forEach((f,i)=>f.position.set((i-1.5)*.65,0,-14-i*.4));
- if(save.child&&!sitting){kid.position.x+=(p.x+.85-kid.position.x)*Math.min(1,dt*2);kid.position.z+=(p.z+.85-kid.position.z)*Math.min(1,dt*2)}
- if(save.drank&&!sellerSeen&&distance(-5,4)<2.2){sellerSeen=true;seller.rotation.y=.7;seller.position.x-=.8;caption('생선 장수가 웃으며 길을 비켜 준다.')}
+ if(!save.chapterStep&&save.child&&!sitting){kid.position.x+=(p.x+.85-kid.position.x)*Math.min(1,dt*2);kid.position.z+=(p.z+.85-kid.position.z)*Math.min(1,dt*2)}
+ if(!save.chapterStep&&save.drank&&!sellerSeen&&distance(-5,4)<2.2){sellerSeen=true;seller.rotation.y=.7;seller.position.x-=.8;caption('생선 장수가 웃으며 길을 비켜 준다.')}
  if(save.drank&&!save.done&&sceneTime<0&&p.z< -13.4){sceneTime=0;listen=false;caption('호숫가에서 예수님이 시몬과 안드레를 부르신다.',4)}
  if(sceneTime>=0){
  let before=sceneTime;sceneTime+=dt;
@@ -161,12 +162,14 @@ function loop(now){
  if(clock>sayUntil)by('caption').textContent='';
  let direction=listen?soundscape():0;ears.forEach((ear,i)=>ear.rotation.z=listen?(i?1:-1)*(.6+.2*Math.cos(direction)):0);
  by('place').textContent=p.z< -10?'갈릴리 호숫가':p.z<1?'아이의 골목':'가버나움 장터';
- by('hint').textContent=save.done?'E · 여행 기록 펼치기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
- const focus=new T.Vector3(p.x,.85,p.z);
+ by('hint').textContent=save.done?'E · 시몬의 집으로 동행하기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
+ if(save.chapterStep)updateChapter(dt);
+ const focus=new T.Vector3(p.x,p.y+.85,p.z);
  const viewYaw=sceneTime>=0?0:yaw;
  let target=focus.clone();
- for(let r=.2;r<=3.8;r+=.2){let x=p.x-Math.sin(viewYaw)*r,z=p.z+Math.cos(viewYaw)*r;if(walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.12&&Math.abs(z-cz)<d+.12))break;target.set(x,1.35+r*.19,z)}
- camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(p.x+Math.sin(viewYaw)*1.5,.78,p.z-Math.cos(viewYaw)*1.5);
+ for(let r=.2;r<=3.8;r+=.2){let x=p.x-Math.sin(viewYaw)*r,z=p.z+Math.cos(viewYaw)*r;if(!save.chapterStep&&walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.12&&Math.abs(z-cz)<d+.12))break;target.set(x,p.y+1.35+r*.19,z)}
+ camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(p.x+Math.sin(viewYaw)*1.5,p.y+.78,p.z-Math.cos(viewYaw)*1.5);
+ if(save.chapterStep)chapterCamera();
  renderer.render(scene,camera);
 }
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
