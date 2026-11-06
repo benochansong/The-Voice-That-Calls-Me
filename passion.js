@@ -28,7 +28,7 @@ const seventh={
  linenTomb:[.5,-1.8,'step','세마포 스치는 소리','무덤 가까이 조용히 다가가기','장사 지켜보기','gardenTomb'],
  laidToRest:[.5,-1.8,'step','천이 움직이는 소리','여인들 곁에서 요셉이 장사하는 모습 지켜보기','','gardenTomb'],
  sabbath:[0,3,'step','고요한 길','무덤에서 물러나 쉴 자리 찾기','안식일에 머물기','gardenTomb'],
- seventhEnd:[0,3,'step','저녁 바람','7장 끝 · 안식일의 고요','여행 수첩 펼치기','gardenTomb']
+ seventhEnd:[0,3,'step','저녁 바람','7장 끝 · 안식일의 고요','새벽 정원으로 가기','gardenTomb']
 };
 Object.assign(laterBeats,seventh);
 function isSeventh(){return Object.hasOwn(seventh,save.chapterStep)}
@@ -168,18 +168,18 @@ function seventhAction(){
  case 'gravePath':enterBeat('linenTomb',[0,0,5.4]);caption('준비일 저녁, 아리마대 사람 요셉이 빌라도에게 예수님의 몸을 청한다.',5);break;
  case 'linenTomb':enterBeat('laidToRest');caption('요셉은 예수님의 몸을 내려 세마포로 싸고, 아직 아무도 모신 적 없는 바위 무덤에 모신다.　눅 23:50–56',7);break;
  case 'sabbath':enterBeat('seventhEnd');caption('안식일. 보리는 사람들의 발소리가 잦아든 길에서 쉰다.',6);break;
- case 'seventhEnd':journal();break;
+ case 'seventhEnd':enterBeat('gardenDawn',[0,0,5.7]);caption('제8장　정원에서 아침 식탁까지 · 안식 후 첫날, 아직 어두운 때.',5);break;
  }
 }
 function appendSeventhRecord(refs){
  const s=save.chapterStep,b=seventh[s],afterMeal=!['upperDoor','washFeet','mealPlace','lastMeal'].includes(s);
  if(s!=='upperDoor'&&s!=='washFeet')refs.append(' 예수님은 제자들의 발을 씻기시고 서로 섬기라고 가르치셨다(요 13:1–17).');
  if(afterMeal)refs.append(' 마지막 식사에서 예수님은 떡과 잔을 건네셨다(눅 22:14–23).');
- if(afterMeal&&b[6]!=='upper'&&b[6]!=='olives')refs.append(' 겟세마네에서 기도하신 뒤 붙잡히셨고 제자들이 흩어졌다(막 14:32–50).');
+ if(afterMeal&&b?.[6]!=='upper'&&b?.[6]!=='olives')refs.append(' 겟세마네에서 기도하신 뒤 붙잡히셨고 제자들이 흩어졌다(막 14:32–50).');
  if(save.passionView||['emptySeat','morning','passionChoice'].includes(s))refs.append(' 베드로가 세 번 부인하고 밖에 나가 울었다(눅 22:54–62).');
- if(s==='seventhEnd'){refs.append(' 빌라도가 판결했고 로마 군인들이 십자가형을 집행했다. 예수님이 죽으신 뒤 요셉이 장사했고 여인들은 안식일에 쉬었다(눅 23:13–56).');by('memory').lastElementChild.append(save.mealView==='door'?' 보리는 문간에서 마지막 식사를 지켜보고 안식일 길가에서 쉬었다.':' 보리는 식탁 가까이서 마지막 식사를 지켜보고 안식일 길가에서 쉬었다.');}
+ if(isEighth()||s==='seventhEnd'){refs.append(' 빌라도가 판결했고 로마 군인들이 십자가형을 집행했다. 예수님이 죽으신 뒤 요셉이 장사했고 여인들은 안식일에 쉬었다(눅 23:13–56).');by('memory').lastElementChild.append(save.mealView==='door'?' 보리는 문간에서 마지막 식사를 지켜보고 안식일 길가에서 쉬었다.':' 보리는 식탁 가까이서 마지막 식사를 지켜보고 안식일 길가에서 쉬었다.');}
 }
-syncChapter();
+
 // Timed checkpoints restart the scene; restore its opening narration along with its actors.
 if(isSeventh()){
  const resumeLines={

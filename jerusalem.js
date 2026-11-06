@@ -142,6 +142,6 @@ function appendSixthRecord(refs){
  refs.append(' 예수님이 어린 나귀를 타고 예루살렘에 들어가시자 제자들이 찬양했다(눅 19:28–40).');
  by('memory').lastElementChild.append(save.entryView==='crowd'?' 보리는 길 가장자리에서 찬양하는 이들의 얼굴을 보았다.':' 보리는 길 가운데서 어린 나귀의 발굽을 따라갔다.');
  }
- if(isSeventh()||['twilight','sixthEnd'].includes(s)||area==='bethany')refs.append(' 예수님은 두 렙돈을 넣은 과부가 자기 생활비 전부를 드렸다고 말씀하셨다(막 12:41–44).');
- if(isSeventh()||s==='backToCity'||s==='sixthEnd'){refs.append(' 입성 전 베다니에서 마리아가 예수님의 발에 향유를 붓고 머리털로 닦았다(요 12:1–8).');by('memory').lastElementChild.append(' 보리는 그 저녁을 떠올리며 식탁 곁에서 마리아에게 길을 비켜 주었던 일을 기억했다.');}
+ if((isSeventh()||isEighth())||['twilight','sixthEnd'].includes(s)||area==='bethany')refs.append(' 예수님은 두 렙돈을 넣은 과부가 자기 생활비 전부를 드렸다고 말씀하셨다(막 12:41–44).');
+ if((isSeventh()||isEighth())||s==='backToCity'||s==='sixthEnd'){refs.append(' 입성 전 베다니에서 마리아가 예수님의 발에 향유를 붓고 머리털로 닦았다(요 12:1–8).');by('memory').lastElementChild.append(' 보리는 그 저녁을 떠올리며 식탁 곁에서 마리아에게 길을 비켜 주었던 일을 기억했다.');}
 }

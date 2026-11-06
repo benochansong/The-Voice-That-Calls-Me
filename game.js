@@ -139,7 +139,7 @@ function loop(now){
  let dx=Number(keys.has('KeyD'))-Number(keys.has('KeyA'))+axis(0),dz=Number(keys.has('KeyS'))-Number(keys.has('KeyW'))+axis(1);
  const norm=Math.max(1,Math.hypot(dx,dz)),speed=(listen?1.15:keys.has('ShiftLeft')||pad?.buttons[10]?.pressed?4.8:2.75)*dt;
  const vx=(dx*Math.cos(yaw)-dz*Math.sin(yaw))*speed/norm,vz=(dx*Math.sin(yaw)+dz*Math.cos(yaw))*speed/norm,p=sheep.position;
- let move=(dx||dz)&&clock>=poseEnd&&sceneTime<0;
+ let move=(dx||dz)&&clock>=poseEnd&&sceneTime<0&&save.chapterStep!=='testimony'&&save.chapterStep!=='credits';
  if(move){
  if(!blocked(p.x+vx,p.z))p.x+=vx;
  if(!blocked(p.x,p.z+vz)&& (save.drank||p.z+vz>11))p.z+=vz;
