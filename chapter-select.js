@@ -76,10 +76,19 @@ function renderChapterEntries(){
   row.append(replayButton(choice.label,()=>playChapter(n,choice)),memory);content.append(row);
  }
 }
+function showJournalSection(section){
+ by('book').dataset.section=section;
+ by('accessPanel').hidden=section!=='access';
+ by('chapterLibrary').hidden=section!=='chapters';
+ by('memory').hidden=section!=='memory';
+ by('accessButton').setAttribute('aria-expanded',String(section==='access'));
+ by('chooseChapter').setAttribute('aria-expanded',String(section==='chapters'));
+ by('chooseChapter').textContent=section==='chapters'?'여행 기록 보기':'장 선택';
+ by('accessButton').textContent=section==='access'?'설정 닫기':'접근성 설정';
+ by('book').scrollTop=0;
+}
 function setChapterLibrary(open){
- by('chapterLibrary').hidden=!open;by('memory').hidden=open;
- by('chooseChapter').setAttribute('aria-expanded',String(open));
- by('chooseChapter').textContent=open?'여행 기록 보기':'장 선택';
+ showJournalSection(open?'chapters':'memory');
  if(open){
   const reached=reachedChapter(),list=by('chapterList');
   list.replaceChildren();
@@ -101,6 +110,7 @@ function showReplayExitHint(){
  if(s==='credits'||distance(cue[0],cue[1])<1.45)by('hint').textContent='E · 이 장을 마치고 원래 여정으로 돌아가기';
 }
 by('leaveReplay').onclick=()=>restoreMainJournal();
+by('accessButton').onclick=()=>showJournalSection(by('accessPanel').hidden?'access':'memory');
 by('chooseChapter').onclick=()=>setChapterLibrary(by('chapterLibrary').hidden);
 by('chapterList').onchange=renderChapterEntries;
 if(chapterReplay)by('menu').textContent='다시 플레이 · 여행 수첩';

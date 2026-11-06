@@ -73,19 +73,19 @@ for(let s of [-1,1]){
  for(let z of [-.26,.28])legs.push(oval(sheep,muzzle,s*.23,.24,z,.095,.25,.095));
 }
 oval(sheep,cream,0,.61,.56,.14,.14,.15);
-const by=id=>document.getElementById(id);
+
 const prologuePreview=location.hash==='#nativity-preview';
 // The replay checkpoint belongs to this tab's history entry, never to the campaign slot.
 const chapterReplay=location.hash==='#chapter-replay'?history.state?.boriReplay:null;
 const replaying=prologuePreview||Boolean(chapterReplay);
 const fresh=()=>({drank:false,child:false,done:false,x:0,z:8,prologue:'watchFlock'});
-let save=fresh(),prefs={mute:false,toggle:false};
+let save=fresh();
 try{
  const previous=JSON.parse(localStorage.getItem('boriJourney'));
  // Older saves already belong to the market or a later chapter, including undrunk market saves.
  if(!replaying&&previous&&typeof previous==='object')save=Object.assign({drank:false,child:false,done:false,x:0,z:17},previous);
 }catch{}
-try{Object.assign(prefs,JSON.parse(localStorage.boriPrefs||'{}'))}catch{}
+
 if(replaying&&history.state?.boriReplay?.checkpoint)save={...history.state.boriReplay.checkpoint};
 sheep.position.set(save.x,0,save.z);
 function checkpoint(){
@@ -96,21 +96,17 @@ function checkpoint(){
  }
  try{localStorage.boriJourney=JSON.stringify(save)}catch{}
 }
-function settings(){prefs={mute:by('mute').checked,toggle:by('toggle').checked};try{localStorage.boriPrefs=JSON.stringify(prefs)}catch{}if(prefs.mute)window.speechSynthesis?.cancel()}
-for(let key of ['mute','toggle']){by(key).checked=prefs[key];by(key).onchange=settings}
-let yaw=0,keys=new Set(),listen=false,drag=false,audio,clock=0,nextTone=0,sayUntil=0,pose='',poseEnd=0,sceneTime=-1,sellerSeen=false,camReady=false;
-function caption(t,d=3){by('caption').textContent=t;sayUntil=clock+d}
-function awaken(){try{audio??=new AudioContext();if(audio.state==='suspended')audio.resume().catch(()=>{})}catch{}}
-function voice(t){if(prefs.mute||!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=.82;window.speechSynthesis.speak(u)}
+let yaw=0,keys=new Set(),listen=false,drag=false,clock=0,nextTone=0,sayUntil=0,pose='',poseEnd=0,sceneTime=-1,sellerSeen=false,camReady=false;
+function caption(t,d=3){storyCaption.textContent=t;storyCaption.scrollTop=0;sayUntil=clock+d}
 function ping(type,side,level){
- if(!audio||prefs.mute)return;
+ if(!audio||!environmentAudible())return;
  const osc=audio.createOscillator(),gain=audio.createGain(),pan=audio.createStereoPanner(),t=audio.currentTime;
  const hz={water:920,call:330,step:90,cry:490,coin:1480,cock:660}[type];
  osc.type=type==='step'?'triangle':'sine';osc.frequency.setValueAtTime(hz,t);osc.frequency.exponentialRampToValueAtTime(type==='call'?440:hz*.74,t+.28);
  gain.gain.setValueAtTime(.001,t);gain.gain.exponentialRampToValueAtTime(level,t+.035);gain.gain.exponentialRampToValueAtTime(.001,t+.35);
- pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(audio.destination);osc.start(t);osc.stop(t+.38);
+ pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(environmentGain);osc.start(t);osc.stop(t+.38);
 }
-function journal(){keys.clear();listen=false;
+function journal(){keys.clear();listen=false;setDirectionCue('');
  by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();prepareChapterMenu();by('book').showModal();by('book').scrollTop=0}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
 by('restart').onclick=()=>{if(replaying)return;if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
@@ -136,14 +132,17 @@ function blocked(x,z){
  if(Math.abs(x)>7.8||z>20||z< -20||z< -14&&Math.abs(x)>2.2)return true;
  return walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.35&&Math.abs(z-cz)<d+.35)
 }
+const soundFacing=new T.Vector3();
 function soundscape(){
+ camera.getWorldDirection(soundFacing);
+ const listenerYaw=Math.atan2(soundFacing.x,-soundFacing.z);
  const sources=save.prologue?nativityCues():save.chapterStep?chapterSounds():save.drank?[[0,-13,'call','익숙한 부름'],[-5,4,'step','장수의 발소리'],...(!save.child?[[5,-4,'cry','아이의 훌쩍임']]:[])]:[[.35,13.6,'water','손에 맺힌 물방울']];
  const audible=sources.map(([x,z,type,name])=>{
- let angle=Math.atan2(x-sheep.position.x,sheep.position.z-z)-yaw;
+ let angle=Math.atan2(x-sheep.position.x,sheep.position.z-z)-listenerYaw;
  angle=Math.atan2(Math.sin(angle),Math.cos(angle));return {angle,type,name,weight:(1.5+Math.cos(angle))/(3+distance(x,z))};
  }).sort((a,b)=>b.weight-a.weight);
- const cue=audible[0],side=Math.abs(Math.sin(cue.angle))<.25?'':Math.sin(cue.angle)>0?'오른쪽 ':'왼쪽 ';
- if(clock>sayUntil)by('caption').textContent=side+(Math.cos(cue.angle)>=0?'앞':'뒤')+' · '+cue.name;
+ const cue=audible[0];
+ setDirectionCue(prefs.directionCaptions?cueDirection(cue.angle)+' · '+cue.name:'');
  if(clock>nextTone){audible.forEach((s,i)=>ping(s.type,s.angle,Math.max(.004,Math.min(.12,s.weight*.6))/(1+i)));nextTone=clock+.85}
  return cue.angle;
 }
@@ -164,6 +163,7 @@ function loop(now){
  if(!blocked(p.x,p.z+vz)&& (save.prologue||save.drank||p.z+vz>11))p.z+=vz;
  sheep.rotation.y=Math.atan2(-vx,-vz);
  }
+ if(!listen)setDirectionCue('');
  if(save.prologue){updateNativity(dt,move);renderer.render(scene,camera);return}
  const sitting=pose==='sit'&&clock<poseEnd,drinking=pose==='drink'&&clock<poseEnd;
  sheep.scale.y=sitting?.72:1;head.rotation.x=drinking?-.7:0;
@@ -179,17 +179,20 @@ function loop(now){
  fishers.forEach((f,i)=>{if(sceneTime>(i<2?1:5))f.position.lerp(new T.Vector3((i-1.5)*.65,0,-14-i*.4),dt*.8)});
  if(sceneTime>8){save.done=true;sceneTime=-1;checkpoint();caption('그들은 그물을 두고 예수님을 따랐다.　막 1:16–20',5)}
  }
- if(clock>sayUntil)by('caption').textContent='';
+ if(clock>sayUntil&&by('caption').textContent)by('caption').textContent='';
  let direction=listen?soundscape():0;ears.forEach((ear,i)=>ear.rotation.z=listen?(i?1:-1)*(.6+.2*Math.cos(direction)):0);
  by('place').textContent=p.z< -10?'갈릴리 호숫가':p.z<1?'아이의 골목':'가버나움 장터';
  by('hint').textContent=save.done?'E · 시몬의 집으로 동행하기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
  if(save.chapterStep)updateChapter(dt);
  if(chapterReplay)showReplayExitHint();
- const focus=new T.Vector3(p.x,p.y+.85,p.z);
+ // Follow the actual terrain height. On deck, scale only the rocking component of the camera, not the hull or the player's footing.
+ const onDeck=route[save.chapterStep]?.[6]==='crossing';
+ const cameraBaseY=onDeck ? .12+(p.y-.12)*prefs.cameraShake/100 : p.y;
+ const focus=new T.Vector3(p.x,cameraBaseY+.85,p.z);
  const viewYaw=sceneTime>=0?0:yaw;
  let target=focus.clone();
- for(let r=.2;r<=3.8;r+=.2){let x=p.x-Math.sin(viewYaw)*r,z=p.z+Math.cos(viewYaw)*r;if(!save.chapterStep&&walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.12&&Math.abs(z-cz)<d+.12))break;target.set(x,p.y+1.35+r*.19,z)}
- camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(p.x+Math.sin(viewYaw)*1.5,p.y+.78,p.z-Math.cos(viewYaw)*1.5);
+ for(let r=.2;r<=3.8;r+=.2){let x=p.x-Math.sin(viewYaw)*r,z=p.z+Math.cos(viewYaw)*r;if(!save.chapterStep&&walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.12&&Math.abs(z-cz)<d+.12))break;target.set(x,cameraBaseY+1.35+r*.19,z)}
+ camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(p.x+Math.sin(viewYaw)*1.5,cameraBaseY+.78,p.z-Math.cos(viewYaw)*1.5);
  if(save.chapterStep)chapterCamera();
  renderer.render(scene,camera);
 }

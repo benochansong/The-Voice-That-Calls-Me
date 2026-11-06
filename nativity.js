@@ -180,8 +180,8 @@ function updateNativity(dt,moving){
  if(lineIndex>=0&&lineIndex!==lastNativityLine){
   lastNativityLine=lineIndex;caption(nativityWords[s][lineIndex][1],6);if(s==='goodNews')ping('call',-.12,.045)
  }
- if(clock>sayUntil)by('caption').textContent='';
- if(listen&&nativityCanWalk())soundscape();
+ if(clock>sayUntil&&by('caption').textContent)by('caption').textContent='';
+ if(listen&&nativityCanWalk())soundscape();else setDirectionCue('');
  introEye.set(p.x-Math.sin(yaw)*2.85,2.18,p.z+Math.cos(yaw)*2.85);
  introTarget.set(p.x+Math.sin(yaw)*2,1.18,p.z-Math.cos(yaw)*2);
  if(s==='goodNews'){

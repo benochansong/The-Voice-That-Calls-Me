@@ -103,7 +103,7 @@ function updateSeventh(dt){
  const brief=s==='passionChoice'&&distance(2.6,3)<1.4;
  by('place').textContent={upper:'다락방 · '+(['upperDoor','washFeet'].includes(s)?'발 씻김　요 13:1–17':'마지막 식사　눅 22:14–23'),olives:'겟세마네　막 14:32–50',fireside:'불을 피운 뜰　눅 22:54–62',judgment:'빌라도의 재판 뜰　눅 23:13–25',hillCross:'멀리서 지켜보는 언덕　눅 23:26–49',gardenTomb:'장사와 안식일　눅 23:50–56'}[area];
  by('hint').textContent=brief?'E · 수난 짧게 보기':edge?'E · 문간에서 마지막 식사 바라보기':b[5]&&distance(b[0],b[1])<1.45?'E · '+b[5]:b[4];
- if(s==='briefPassion'){by('caption').textContent=briefText;shroud.visible=false;joseph.visible=false;burialStone.position.x=.08;return}
+ if(s==='briefPassion'){if(by('caption').textContent!==briefText)caption(briefText,Infinity);shroud.visible=false;joseph.visible=false;burialStone.position.x=.08;return}
  if(area==='upper'){
  const wash=s==='upperDoor'||s==='washFeet';aTeacher.position.set(wash?-.05:0,0,wash?-.85:-2.25);
  aTeacher.scale.y=wash?.58:.87;towel.visible=wash;towel.position.y=.43+(s==='washFeet'?Math.sin(t*2)*.07:0);

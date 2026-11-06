@@ -69,12 +69,12 @@ function syncEighth(b){
  return true;
 }
 function endingSound(boat){
- if(!audio||prefs.mute)return;
+ if(!audio||!environmentAudible())return;
  const duration=boat?2.2:.24,size=Math.floor(audio.sampleRate*duration),buffer=audio.createBuffer(1,size,audio.sampleRate),data=buffer.getChannelData(0);
  let drift=0;
  for(let i=0;i<size;i++){const n=Math.random()*2-1;drift=(drift+.04*n)/1.04;data[i]=boat?drift*1.6:n*Math.exp(-i/(size*.12));}
  const source=audio.createBufferSource(),gain=audio.createGain(),t=audio.currentTime;
- source.buffer=buffer;gain.gain.setValueAtTime(.001,t);gain.gain.linearRampToValueAtTime(boat?.19:.08,t+(boat?.7:.008));gain.gain.exponentialRampToValueAtTime(.001,t+duration);source.connect(gain).connect(audio.destination);source.start();
+ source.buffer=buffer;gain.gain.setValueAtTime(.001,t);gain.gain.linearRampToValueAtTime(boat?.19:.08,t+(boat?.7:.008));gain.gain.exponentialRampToValueAtTime(.001,t+duration);source.connect(gain).connect(environmentGain);source.start();
 }
 function eighthBlocked(x,z){
  if(save.chapterStep==='credits')return true;

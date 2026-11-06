@@ -69,7 +69,7 @@ function syncFourth(b){
 const stormSky=new T.Color(0x627785),calmSky=new T.Color(0xb4cbca);
 let gustNoise,nextGust=0;
 function playGust(strength){
- if(!audio||prefs.mute||strength<.08||clock<nextGust)return;
+ if(!audio||!environmentAudible()||strength<.08||clock<nextGust)return;
  nextGust=clock+1;
  if(!gustNoise){
   gustNoise=audio.createBuffer(1,audio.sampleRate,audio.sampleRate);
@@ -79,7 +79,7 @@ function playGust(strength){
  const source=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain(),t=audio.currentTime;
  source.buffer=gustNoise;filter.type='lowpass';filter.frequency.value=290+strength*430;
  gain.gain.setValueAtTime(.001,t);gain.gain.linearRampToValueAtTime(.095*strength,t+.4);gain.gain.exponentialRampToValueAtTime(.001,t+.98);
- source.connect(filter).connect(gain).connect(audio.destination);source.start();
+ source.connect(filter).connect(gain).connect(environmentGain);source.start();
 }
 function updateFourth(dt){
  const s=save.chapterStep,b=route[s],p=sheep.position;
