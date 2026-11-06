@@ -13,7 +13,7 @@ const route={
  bread:[0,-5,'call','떡을 나누는 자리','앞쪽에서 예수님과 제자들을 바라보기','떡과 물고기 바라보기','meadow'],
  sharing:[3,-1,'step','제자들의 발걸음','음식을 나누는 제자를 따라 오른쪽 무리로 가기','사람들 곁에 머물기','meadow'],
  baskets:[0,3.4,'step','광주리 놓는 소리','다시 길 입구로 돌아와 광주리 살펴보기','남은 조각 바라보기','meadow'],
- fourthEnd:[0,3.4,'step','풀잎 스치는 소리','4장 끝 · 빈 들의 저녁','여행 수첩 펼치기','meadow']
+ fourthEnd:[0,3.4,'step','풀잎 스치는 소리','4장 끝 · 빈 들의 저녁','5장 길 위의 이야기로','meadow']
 };
 Object.assign(laterBeats,route);
 function isFourth(){return Object.hasOwn(route,save.chapterStep)}
@@ -136,17 +136,16 @@ function fourthAction(){
  case 'bread':enterBeat('sharing');caption('예수님이 떡 다섯 개와 물고기 두 마리를 받아 하늘을 우러러 축복하신 뒤, 떡을 떼어 제자들에게 주신다.',7);break;
  case 'sharing':enterBeat('baskets');caption('제자들이 무리에게 나누어 주고, 모두 배불리 먹었다.　막 6:39–42',6);break;
  case 'baskets':enterBeat('fourthEnd');caption('먹은 남자가 오천 명이었다. 남은 떡 조각과 물고기를 모으니 열두 광주리가 찼다.　막 6:43–44',7);break;
- case 'fourthEnd':journal();break;
+ case 'fourthEnd':enterBeat('neighbor',[0,0,5.8]);caption('제5장　길가에서 들린 이름 · 누가 내 이웃인지 묻는 사람에게 예수님이 이야기를 들려주신다.',6);break;
  }
 }
 function appendFourthRecord(refs){
  const s=save.chapterStep;
  if(!['boarding','gale','hush'].includes(s))refs.append(' 제자들이 예수님을 깨웠고, 그분의 말씀에 풍랑이 잔잔해졌다(막 4:35–41).');
- if(s==='fourthEnd')refs.append(' 예수님이 떡 다섯 개와 물고기 두 마리를 축복하셨고 제자들이 나누어 주었다. 모두 먹고 남은 것은 열두 광주리였다(막 6:30–44).');
+ if(s==='fourthEnd'||isFifth())refs.append(' 예수님이 떡 다섯 개와 물고기 두 마리를 축복하셨고 제자들이 나누어 주었다. 모두 먹고 남은 것은 열두 광주리였다(막 6:30–44).');
  if(save.shelter)by('memory').lastElementChild.append(save.shelter==='feet'?' 보리는 제자의 발 곁에서 웅크렸다.':' 보리는 감긴 밧줄 곁에서 몸을 낮췄다.');
- if(s==='fourthEnd')by('memory').lastElementChild.append(' 보리가 늦게 온 가족을 풀밭의 빈자리로 이끌었다.');
+ if(s==='fourthEnd'||isFifth())by('memory').lastElementChild.append(' 보리가 늦게 온 가족을 풀밭의 빈자리로 이끌었다.');
  if(save.shoreMemory){
  const note=document.createElement('p');note.textContent='물가에서 들은 기억 · 야이로가 딸을 위해 찾아온 길에, 오래 앓던 여인이 예수님의 옷에 손을 대어 나았다. 예수님은 여인의 말을 들으신 뒤 야이로의 집으로 가서 딸의 손을 잡아 일으키셨다(막 5:21–43).';refs.after(note);
  }
 }
-syncChapter();
