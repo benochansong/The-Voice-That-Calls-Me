@@ -217,7 +217,7 @@ function loop(now){
  if(p.x!==lastX||p.z!==lastZ)sheep.rotation.y=Math.atan2(lastX-p.x,lastZ-p.z);
  }
  if(!listen)setDirectionCue('');
- if(save.prologue){updateNativity(dt,move);updateCast(dt);updateCharacterDialogue(dt);playSceneMusic();renderer.render(scene,camera);return}
+ if(save.prologue){updateNativity(dt,move);updateCast(dt);updateCharacterDialogue(dt);updateAtmosphere(dt);playSceneMusic();renderer.render(scene,camera);return}
  if(!save.chapterStep){updateWaterMeeting(dt);updateMarketTeacher(dt)}
  const sitting=(pose==='sit'&&clock<poseEnd)||save.chapterStep==='credits'||
   (save.shelter&&['gale','hush'].includes(save.chapterStep));
@@ -273,6 +273,7 @@ function loop(now){
  if(save.chapterStep==='credits')frameRestingPlace(target,focus);
  if(save.chapterStep)chapterCamera(target,focus);
  settleStoryCamera(target,focus,dt);
+ updateAtmosphere(dt);
  playSceneMusic();
  renderer.render(scene,camera);
 }

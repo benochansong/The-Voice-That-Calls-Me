@@ -37,14 +37,34 @@ function buildNativity(){
  }
 
  // A fine field of stars, with no guiding star over the village.
- const stars=new Float32Array(160*3);
- for(let i=0;i<160;i++){
-  const a=i*2.39996,e=.13+(i%43)/43*1.38;
+ const stars=new Float32Array(260*3),starSeeds=new Float32Array(260);
+ for(let i=0;i<260;i++){
+  const a=i*2.39996,e=.035+(i%53)/53*1.49;
   stars.set([Math.cos(a)*46*Math.cos(e),46*Math.sin(e),Math.sin(a)*46*Math.cos(e)-6],i*3);
+  starSeeds[i]=(i*.61803398875)%1;
  }
  const skyGeometry=new T.BufferGeometry();
  skyGeometry.setAttribute('position',new T.BufferAttribute(stars,3));
- field.add(new T.Points(skyGeometry,new T.PointsMaterial({color:0xffedcd,size:.11,fog:false})));
+ skyGeometry.setAttribute('seed',new T.BufferAttribute(starSeeds,1));
+ const starlight=new T.Points(skyGeometry,new T.ShaderMaterial({
+  transparent:true,depthWrite:false,
+  uniforms:{time:{value:0},pixelRatio:{value:renderer.getPixelRatio()}},
+  vertexShader:`
+   attribute float seed;uniform float time;uniform float pixelRatio;varying float glow;
+   void main(){
+    glow=.72+.13*sin(time*(.35+seed*.3)+seed*28.);
+    gl_PointSize=(2.2+seed*2.2)*pixelRatio;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
+   }`,
+  fragmentShader:`
+   varying float glow;
+   void main(){
+    vec2 p=gl_PointCoord-.5;float halo=exp(-dot(p,p)*21.);
+    gl_FragColor=vec4(1.,.91,.74,halo*glow);
+    #include <colorspace_fragment>
+   }`
+ }));
+ starlight.name='nativity-stars';field.add(starlight);
 
  const lampMaterial=new T.MeshBasicMaterial({color:0xffcf79});
  function lantern(x,z,height){
@@ -112,7 +132,7 @@ function buildNativity(){
  const tinyHand=oval(manger,0xd5a27d,.24,.82,.19,.075,.055,.065);
  for(let i=0;i<3;i++)oval(manger,0xd5a27d,.224+i*.029,.844,.213,.018,.032,.024);
  const cradleLight=new T.PointLight(0xffc383,10,8);cradleLight.position.set(.1,2,-16.35);field.add(cradleLight);
- return {field,player,companions,messenger,halo,choir,flock,flame,swaddle,tinyHand};
+ return {field,player,companions,messenger,halo,choir,flock,flame,swaddle,tinyHand,starlight,firelight,cradleLight};
 }
 
 let nativitySet=null,nativityTime=0,lastNativityLine=-1;

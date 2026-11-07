@@ -1,3 +1,4 @@
+const paintedSkyWeather={cover:{value:0},travel:{value:0}};
 // Hand-painted surfaces use the same small set of offline, tileable washes in every chapter.
 // Details are batched by shape so a basket of fruit or a whole field of stems needs only a few draws.
 (()=>{
@@ -333,7 +334,7 @@
  }
  const cloudAtlas=new T.CanvasTexture(panorama);cloudAtlas.wrapS=T.RepeatWrapping;
  const skyMaterial=new T.ShaderMaterial({
-  side:T.BackSide,depthWrite:false,uniforms:{skyTint:{value:new T.Color()},cloudInk:{value:textures.sand},cloudAtlas:{value:cloudAtlas}},
+  side:T.BackSide,depthWrite:false,uniforms:{skyTint:{value:new T.Color()},cloudInk:{value:textures.sand},cloudAtlas:{value:cloudAtlas},cover:paintedSkyWeather.cover,travel:paintedSkyWeather.travel},
   vertexShader:`
    varying vec3 viewRay;
    void main(){
@@ -342,7 +343,7 @@
     gl_Position=clip.xyww;
    }`,
   fragmentShader:`
-   uniform vec3 skyTint;uniform sampler2D cloudInk;uniform sampler2D cloudAtlas;varying vec3 viewRay;
+   uniform vec3 skyTint;uniform sampler2D cloudInk;uniform sampler2D cloudAtlas;uniform float cover;uniform float travel;varying vec3 viewRay;
    void main(){
     vec3 ray=normalize(viewRay);
     float daylight=smoothstep(.12,.53,dot(skyTint,vec3(.2126,.7152,.0722)));
@@ -350,13 +351,15 @@
     vec3 high=mix(skyTint*vec3(.73,.83,1.04),mix(skyTint,vec3(.38,.65,.77),.70),daylight);
     vec3 low=mix(skyTint*1.10,mix(skyTint,vec3(1.0,.81,.60),.33),daylight);
     vec3 color=mix(low,high,smoothstep(-.07,.61,h));
-    vec2 uv=ray.xz/max(.15,h+.10);
+    vec2 uv=ray.xz/max(.15,h+.10)+vec2(travel,travel*.22);
     float ink=texture2D(cloudInk,uv*vec2(.17,.55)).r;
     float ripple=sin(uv.y*4.5+sin(uv.x*1.7)+sin(uv.x*.8)*2.5);
     float clouds=smoothstep(.14,.83,ripple+(ink-.88)*1.65)*smoothstep(.02,.11,h)*(1.0-smoothstep(.30,.72,h));
-    vec2 cloudUV=vec2(atan(ray.z,ray.x)/6.28318+.5,clamp(.05+h*1.4,0.,1.));
+    vec2 cloudUV=vec2(atan(ray.z,ray.x)/6.28318+.5+travel*.035,clamp(.05+h*1.4,0.,1.));
     float veil=texture2D(cloudAtlas,cloudUV).a;
     color=mix(color,vec3(.97,.94,.82),daylight*(clouds*.09+veil*.68));
+    vec3 stormInk=mix(skyTint*.62,skyTint*1.18,clamp(ink*.4+clouds*.35+veil*.3,0.,1.));
+    color=mix(color,stormInk,cover*.8);
     color*=.985+.018*ink;
     gl_FragColor=vec4(color,1.);
     #include <colorspace_fragment>
