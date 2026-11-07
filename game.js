@@ -127,7 +127,7 @@ function ping(type,side,level){
  gain.gain.setValueAtTime(.001,t);gain.gain.exponentialRampToValueAtTime(level,t+.035);gain.gain.exponentialRampToValueAtTime(.001,t+.35);
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(environmentGain);osc.start(t);osc.stop(t+.38);
 }
-function journal(){pauseCharacterLine();keys.clear();listen=false;setDirectionCue('');
+function journal(){pauseCharacterLine();stopWorldAudio();keys.clear();listen=false;setDirectionCue('');
  by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();prepareChapterMenu();by('book').showModal();by('book').scrollTop=0}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
 by('restart').onclick=()=>{if(replaying)return;if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
@@ -175,11 +175,11 @@ function soundscape(){
  const audible=sources.map(([x,z,type,name])=>{
  const bearing=Math.atan2(x-sheep.position.x,sheep.position.z-z);
  const relative=bearing-listenerYaw,angle=Math.atan2(Math.sin(relative),Math.cos(relative));
- return {bearing,angle,type,name,weight:(1.5+Math.cos(angle))/(3+distance(x,z))};
+ return {x,z,bearing,angle,type,name,weight:(1.5+Math.cos(angle))/(3+distance(x,z))};
  }).sort((a,b)=>b.weight-a.weight);
  const cue=audible[0];
  setDirectionCue(prefs.directionCaptions?cueDirection(cue.angle)+' · '+cue.name:'');
- if(clock>nextTone){audible.forEach((s,i)=>ping(s.type,s.angle,Math.max(.004,Math.min(.12,s.weight*.6))/(1+i)));nextTone=clock+.85}
+ if(clock>nextTone){audible.slice(0,2).forEach(playSpatialCue);nextTone=clock+1.25}
  return cue.bearing;
 }
 function playSceneMusic(){
@@ -195,7 +195,7 @@ window.addEventListener('pagehide',stopScore);
 let prev=performance.now(),padA=false,padLT=false,padMoving=false;
 function loop(now){
  requestAnimationFrame(loop);const dt=T.MathUtils.clamp((now-prev)/1000,.00001,.05);prev=now;
- if(document.hidden||by('book').open){playSceneMusic();return}
+ if(document.hidden||by('book').open){stopWorldAudio();playSceneMusic();return}
  clock+=dt;
  const pad=Array.from(navigator.getGamepads?.()||[]).find(Boolean),axis=i=>Math.abs(pad?.axes[i]||0)>.16?pad.axes[i]:0;
  const usingStick=Boolean(axis(0)||axis(1)||axis(2));
@@ -217,7 +217,7 @@ function loop(now){
  if(p.x!==lastX||p.z!==lastZ)sheep.rotation.y=Math.atan2(lastX-p.x,lastZ-p.z);
  }
  if(!listen)setDirectionCue('');
- if(save.prologue){updateNativity(dt,move);updateCast(dt);updateCharacterDialogue(dt);updateAtmosphere(dt);playSceneMusic();renderer.render(scene,camera);return}
+ if(save.prologue){updateNativity(dt,move);updateCast(dt);updateCharacterDialogue(dt);updateAtmosphere(dt);updateWorldAudio(dt);playSceneMusic();renderer.render(scene,camera);return}
  if(!save.chapterStep){updateWaterMeeting(dt);updateMarketTeacher(dt)}
  const sitting=(pose==='sit'&&clock<poseEnd)||save.chapterStep==='credits'||
   (save.shelter&&['gale','hush'].includes(save.chapterStep));
@@ -274,6 +274,7 @@ function loop(now){
  if(save.chapterStep)chapterCamera(target,focus);
  settleStoryCamera(target,focus,dt);
  updateAtmosphere(dt);
+ updateWorldAudio(dt);
  playSceneMusic();
  renderer.render(scene,camera);
 }

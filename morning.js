@@ -86,14 +86,6 @@ function syncEighth(b){
  scene.background.set(b[6]==='dawnGarden'?(s==='gardenDawn'||s==='openTomb'?0xa7b5b1:0xd6d6bd):0xc2dcd5);
  return true;
 }
-function endingSound(boat){
- if(!audio||!environmentAudible())return;
- const duration=boat?2.2:.24,size=Math.floor(audio.sampleRate*duration),buffer=audio.createBuffer(1,size,audio.sampleRate),data=buffer.getChannelData(0);
- let drift=0;
- for(let i=0;i<size;i++){const n=Math.random()*2-1;drift=(drift+.04*n)/1.04;data[i]=boat?drift*1.6:n*Math.exp(-i/(size*.12));}
- const source=audio.createBufferSource(),gain=audio.createGain(),t=audio.currentTime;
- source.buffer=buffer;gain.gain.setValueAtTime(.001,t);gain.gain.linearRampToValueAtTime(boat?.19:.08,t+(boat?.7:.008));gain.gain.exponentialRampToValueAtTime(.001,t+duration);source.connect(gain).connect(environmentGain);source.start();
-}
 function eighthBlocked(x,z){
  if(save.chapterStep==='credits')return true;
  const beach=eighth[save.chapterStep][6]==='breakfastBeach';
@@ -110,7 +102,7 @@ const lines8={
  mealMorning:[[0,'숯불 위에는 생선과 떡이 있다. 예수님은 제자들을 아침 식사로 부르신다.'],[4,'예수님이 다가와 떡을 가져다 주시고 생선도 나누어 주신다.　요 21:9–14']],
  threeCalls:[[0,'예수님이 베드로에게 자신을 사랑하느냐고 물으신다. 베드로가 대답하자 어린 양들을 먹이라고 맡기신다.'],[5,'두 번째 물음에도 베드로는 사랑한다고 답한다. 예수님은 양들을 돌보라고 하신다.'],[10,'세 번째 물음에 베드로는 근심하며 주님이 아신다고 답한다. 예수님은 양들을 먹이라고 하신다.'],[15,'예수님은 베드로가 걸을 길을 말씀하시고 자신을 따르라고 부르신다.　요 21:15–19']]
 };
-let lastSpokenStage='',nextEndingSound=0;
+let lastSpokenStage='';
 function updateEighth(dt){
  const s=save.chapterStep,b=eighth[s],t=beatTime,p=sheep.position;p.y=0;
  const boatSide=s==='lastRest'&&distance(3.8,-3.2)<1.4;
@@ -170,7 +162,6 @@ function updateEighth(dt){
  if(s==='credits'){
  const toward=save.restSpot==='boat'?morningBoat.position:ember.position;
  sheep.rotation.y=softTurn(sheep.rotation.y,Math.atan2(p.x-toward.x,p.z-toward.z),dt,2);
- if(clock>=nextEndingSound){const boat=save.restSpot==='boat';endingSound(boat);nextEndingSound=clock+(boat?2.8:1.9)}
  }
 }
 function eighthAction(){

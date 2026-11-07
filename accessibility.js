@@ -76,7 +76,7 @@ applyPlayerPreferences();
 
 function environmentAudible(){return !prefs.mute&&prefs.ambientVolume>0}
 function awaken(){
- if(!environmentAudible()&&!musicAudible())return;
+ if(!environmentAudible()&&!musicAudible()&&(prefs.mute||!prefs.voiceVolume))return;
  try{
   if(!audio){
    audio=new AudioContext();environmentGain=audio.createGain();
@@ -123,5 +123,5 @@ by('sampleVoice').onclick=()=>{
 };
 by('sampleAmbient').onclick=()=>{
  awaken();
- ping('water',0,.12);
+ if(audio)audio.resume().then(()=>playWorldEffect('drop',null,.4,0,true)).catch(()=>{});
 };

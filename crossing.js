@@ -77,20 +77,6 @@ function syncFourth(b){
  return true;
 }
 const stormSky=new T.Color(0x627785),calmSky=new T.Color(0xb4cbca);
-let gustNoise,nextGust=0;
-function playGust(strength){
- if(!audio||!environmentAudible()||strength<.08||clock<nextGust)return;
- nextGust=clock+1;
- if(!gustNoise){
-  gustNoise=audio.createBuffer(1,audio.sampleRate,audio.sampleRate);
-  const samples=gustNoise.getChannelData(0);
-  for(let i=0;i<samples.length;i++)samples[i]=Math.random()*2-1;
- }
- const source=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain(),t=audio.currentTime;
- source.buffer=gustNoise;filter.type='lowpass';filter.frequency.value=290+strength*430;
- gain.gain.setValueAtTime(.001,t);gain.gain.linearRampToValueAtTime(.095*strength,t+.4);gain.gain.exponentialRampToValueAtTime(.001,t+.98);
- source.connect(filter).connect(gain).connect(environmentGain);source.start();
-}
 function updateFourth(dt){
  const s=save.chapterStep,b=route[s],p=sheep.position;
  const aboard=b[6]==='crossing',near=distance(b[0],b[1])<1.55;
@@ -100,7 +86,6 @@ function updateFourth(dt){
  by('hint').textContent=memorySpot?'E · 야이로의 딸과 여인의 기억 듣기':b[5]&&(near||sailorSpot)?'E · '+b[5]:b[4];
  if(aboard){
  const storm=s==='gale'?Math.min(1,.28+beatTime/3):s==='hush'?1-T.MathUtils.clamp((beatTime-4)/4,0,1):0;
- playGust(storm);
  hull.rotation.z=Math.sin(clock*2.3)*(.012+.095*storm);hull.rotation.x=Math.cos(clock*1.9)*(.008+.05*storm);
  p.y=.12+Math.sin(hull.rotation.z)*p.x-Math.sin(hull.rotation.x)*p.z;
  swells.forEach((w,i)=>{const phase=clock*(1+storm)+i;w.position.y=-.59+Math.sin(phase)*(.09+.42*storm);w.scale.y=.18+.62*storm;w.rotation.z=Math.cos(phase)*storm*.15});
