@@ -146,7 +146,7 @@ onkeyup=e=>{keys.delete(e.code);if(e.code==='KeyQ')earUp()};
 onblur=()=>{keys.clear();listen=false;drag=false};
 renderer.domElement.onpointerdown=e=>{awaken();if(e.button===2)earDown();else drag=true;renderer.domElement.setPointerCapture(e.pointerId)};
 onpointerup=e=>{drag=false;if(e.button===2)earUp()};oncontextmenu=e=>e.preventDefault();
-onpointermove=e=>{if(drag)yaw+=e.movementX*.006};
+onpointermove=e=>{if(drag){yaw+=e.movementX*.006;if(e.movementX)cameraInput()}};
 function blocked(x,z){
  if(save.prologue)return nativityBlocked(x,z);
  if(save.chapterStep)return chapterBlocked(x,z);
@@ -204,6 +204,7 @@ function loop(now){
  const a=!!pad?.buttons[0]?.pressed,lt=!!pad?.buttons[6]?.pressed;
  if(a&&!padA){awaken();action()}if(lt&&!padLT){awaken();earDown()}if(!lt&&padLT)earUp();padA=a;padLT=lt;
  yaw+=(Number(keys.has('ArrowRight'))-Number(keys.has('ArrowLeft'))+axis(2))*dt*1.9;
+ if(keys.has('ArrowRight')||keys.has('ArrowLeft')||axis(2))cameraInput();
  let dx=Number(keys.has('KeyD'))-Number(keys.has('KeyA'))+axis(0),dz=Number(keys.has('KeyS'))-Number(keys.has('KeyW'))+axis(1);
  const norm=Math.max(1,Math.hypot(dx,dz)),speed=(listen?1.15:keys.has('ShiftLeft')||pad?.buttons[10]?.pressed?4.8:2.75)*dt;
  const vx=(dx*Math.cos(yaw)-dz*Math.sin(yaw))*speed/norm,vz=(dx*Math.sin(yaw)+dz*Math.cos(yaw))*speed/norm,p=sheep.position;
@@ -247,12 +248,13 @@ function loop(now){
  const pace=waterMeeting?waterMeeting.speed:Math.hypot(p.x-lastX,p.z-lastZ)/dt;
  updateBori(dt,pace>.035,pace,bearing,waterMeeting?.drink??null,Boolean(sitting),save.chapterStep==='credits');
  if(waterMeeting){
-  const dip=T.MathUtils.smoothstep(waterMeeting.drink,.12,.52)*(1-T.MathUtils.smoothstep(waterMeeting.drink,.82,1));
+  const dip=T.MathUtils.smoothstep(waterMeeting.drink,.12,.52)*(1-T.MathUtils.smoothstep(waterMeeting.drink,.55,.9));
   head.position.y+=(waterMeetingHand.y-.62)*dip;
  }else if(!save.drank&&!listen)lookTowardWater(dt);
  by('place').textContent=p.z< -10?'갈릴리 호숫가':p.z<1?'아이의 골목':'가버나움 장터';
  by('hint').textContent=save.done?'E · 시몬의 집으로 동행하기':sceneTime>=0?'부두에서 바라보기':!save.drank?(distance(.35,13.6)<2.5?'E · 손에 담긴 물 마시기':'천막 밖 물소리로 다가가기'):!save.child&&distance(5,-4)<2.5?'E · 아이 곁에 앉기':'귀를 세워 호숫가로 가기';
  if(save.chapterStep)updateChapter(dt);
+ updateMeetingGaze(dt,move);
  updateCast(dt);
  updateCharacterDialogue(dt);
  if(waterMeeting)by('hint').textContent=save.drank?'예수님 곁에서 숨 고르기':'손 가까이 다가가기 · 물러서면 멈춤';
@@ -267,10 +269,10 @@ function loop(now){
  focus.set(p.x+Math.sin(viewYaw)*1.5,cameraBaseY+.78,p.z-Math.cos(viewYaw)*1.5);
  composeWaterCamera(target,focus);
  composeMealView(target,focus);
- composeMealView(target,focus);
+ composeStoryCamera(target,focus,move);
  if(save.chapterStep==='credits')frameRestingPlace(target,focus);
- camera.position.lerp(target,camReady?1-Math.exp(-dt*12):1);camReady=true;camera.lookAt(focus);
- if(save.chapterStep)chapterCamera();
+ if(save.chapterStep)chapterCamera(target,focus);
+ settleStoryCamera(target,focus,dt);
  playSceneMusic();
  renderer.render(scene,camera);
 }

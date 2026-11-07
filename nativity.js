@@ -159,6 +159,7 @@ const nativityWords={
 };
 function restoreMainJournal(){history.replaceState(null,'',location.pathname+location.search);location.reload()}
 function finishNativity(){
+ startSceneDissolve();
  renderer.domElement.style.opacity='';
  if(prologuePreview){restoreMainJournal();return}
  showMarketSet(true);delete save.prologue;save.nativitySeen=true;
@@ -215,8 +216,8 @@ function updateNativity(dt,moving){
   if(market)lastNativityLine=-2;
  }
  swaddle.scale.y=.20+Math.sin(clock*2)*.005;tinyHand.rotation.z=Math.sin(clock)*.08;
- const blend=s==='acrossYears'||!camReady?1:1-Math.exp(-dt*6);
- camera.position.lerp(introEye,blend);camera.lookAt(introTarget);camReady=true;
+ // Cut only at the fully faded midpoint of the hand-to-hand match.
+ settleStoryCamera(introEye,introTarget,dt,58,s==='acrossYears'&&t-dt<3&&t>=3);
  if(s==='goodNews'&&t>=18){nextNativity('toVillage');caption('목자들은 들은 일을 보러 베들레헴으로 서둘러 간다.',6)}
  if(s==='newborn'&&t>=15)nextNativity('holdMemory');
  if(s==='acrossYears'&&t>=6.4)finishNativity();

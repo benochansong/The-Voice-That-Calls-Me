@@ -68,10 +68,11 @@ function updateWaterMeeting(dt){
   save.drank=true;checkpoint();
   callBori(offeringFace);
  }
- if(progress>=1){waterMeeting=null;walkingToLake=true;lakeWaypoint=0;lakeWalkTime=0}
+ // Leave a breath for the lamb to raise its eyes after hearing its name.
+ if(meeting.age>=meeting.approach+sipSeconds+1.1){waterMeeting=null;walkingToLake=true;lakeWaypoint=0;lakeWalkTime=0}
 }
 function composeWaterCamera(eye,look){
- if(!waterMeeting)return;
+ if(!waterMeeting||cameraManual)return;
  const {age,drink,side}=waterMeeting;
  const strength=T.MathUtils.smoothstep(age,0,.55)*(1-T.MathUtils.smoothstep(drink,.84,1));
  const h=waterMeetingHand;

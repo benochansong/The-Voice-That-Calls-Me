@@ -147,7 +147,7 @@ function updateEighth(dt){
  if(s==='testimony'&&t>=9){
   enterBeat('calledHome');callBori(gardener);
  }
- if(s==='calledHome'&&distance(-2.3,-3.8)<1.05){enterBeat('reunion');caption('첫날 물을 건네던 손이 다시 보리의 눈높이로 내려온다.',5)}
+ if(s==='calledHome'&&distance(-2.3,-3.8)<1.3){enterBeat('reunion');caption('첫날 물을 건네던 손이 다시 보리의 눈높이로 내려온다.',5)}
  if(s==='reunion'&&t>=5.5)enterBeat('galilee');
  return;
  }

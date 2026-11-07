@@ -181,7 +181,7 @@ function updateBori(dt,moving,pace,worldBearing,drinkProgress,sitting,resting=fa
  const smooth=(rate)=>1-Math.exp(-dt*rate);
  const angular=(angle)=>Math.atan2(Math.sin(angle),Math.cos(angle));
  const sipping=Number.isFinite(drinkProgress);
- const dip=sipping?T.MathUtils.smoothstep(drinkProgress,.12,.52)*(1-T.MathUtils.smoothstep(drinkProgress,.82,1)):0;
+ const dip=sipping?T.MathUtils.smoothstep(drinkProgress,.12,.52)*(1-T.MathUtils.smoothstep(drinkProgress,.55,.9)):0;
  const attention=Number.isFinite(worldBearing);
  state.elapsed+=dt;
  state.rest+=((resting?1:0)-state.rest)*smooth(4.5);

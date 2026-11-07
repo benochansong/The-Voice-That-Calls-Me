@@ -61,8 +61,11 @@ const inCourt=()=>['bedside','recovery','aside','evening'].includes(save.chapter
 let beatTime=0;
 function enterBeat(step,spawn){
  if(chapterReplay&&chapterForStep(step)!==chapterReplay.chapter){restoreMainJournal();return}
+ const changeSet=cameraSetKey(step)!==cameraSetKey(save.chapterStep);
+ if(changeSet||spawn)startSceneDissolve();
  save.chapterStep=step;beatTime=0;
  if(spawn){sheep.position.set(...spawn);yaw=0;camReady=false}
+ if(changeSet)camReady=false;
  checkpoint();syncChapter();
 }
 function syncChapter(){
@@ -133,13 +136,13 @@ function updateChapter(dt){
  if(s==='healing'&&beatTime-dt<5&&beatTime>=5)caption('예수님이 일어나 자리를 들고 집으로 가라고 말씀하신다.',4);
  if(s==='healing'&&beatTime>10.5){enterBeat('end');caption('그는 모두가 보는 앞에서 자리를 들고 걸어 나갔다.　막 2:1–12',6)}
 }
-function chapterCamera(){
- if(save.chapterStep==='twoCoins'){camera.position.set(-1.45,1.6,.8);camera.lookAt(-2.88,1,-1.2)}
- if(save.chapterStep==='anoint'){camera.position.set(-1.25,.82,.65);camera.lookAt(.32,.37,-1.22)}
+function chapterCamera(eye,look){
+ if(save.chapterStep==='twoCoins'){eye.set(-1.45,1.6,.8);look.set(-2.88,1,-1.2)}
+ if(save.chapterStep==='anoint'){eye.set(-1.25,.82,.65);look.set(.32,.37,-1.22)}
  const s=save.chapterStep;
- if(s==='lowering'){camera.position.set(5.4,8,-.1);camera.lookAt(0,1.8,-3.25)}
- if(s==='healing'){camera.position.set(1.3,1.95,.92);camera.lookAt(0,1,-3)}
- if(s==='recovery'){camera.position.set(.9,1.75,-.5);camera.lookAt(-1.5,.9,-3)}
+ if(s==='lowering'){eye.set(5.4,8,-.1);look.set(0,1.8,-3.25)}
+ if(s==='healing'){eye.set(1.3,1.95,.92);look.set(0,1,-3)}
+ if(s==='recovery'){eye.set(.9,1.75,-.5);look.set(-1.5,.9,-3)}
 }
 function appendChapterRecord(){
  if(!save.chapterStep)return;
