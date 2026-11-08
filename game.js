@@ -127,7 +127,7 @@ function ping(type,side,level){
  gain.gain.setValueAtTime(.001,t);gain.gain.exponentialRampToValueAtTime(level,t+.035);gain.gain.exponentialRampToValueAtTime(.001,t+.35);
  pan.pan.value=Math.sin(side);osc.connect(gain).connect(pan).connect(environmentGain);osc.start(t);osc.stop(t+.38);
 }
-function journal(){pauseCharacterLine();stopWorldAudio();keys.clear();listen=false;setDirectionCue('');
+function journal(){pauseCharacterLine();stopWorldAudio();resetLocomotion();keys.clear();listen=false;setDirectionCue('');
  by('memory').innerHTML=save.done?'<h3>복음서에서</h3><p>마가복음 1장 16–20절 · 갈릴리 호숫가에서 예수님은 시몬과 안드레, 이어 야고보와 요한을 부르셨고 그들은 예수님을 따랐다.</p><h3>보리의 기억 · 창작</h3><p>손에 고인 물을 마셨던 첫날. '+(save.child?'아이가 내 곁에 앉아 함께 호수를 보았다.':'부두에서 그물 고치는 모습을 바라보았다.')+'</p>':'<p>'+by('hint').textContent+'</p>';appendChapterRecord();appendNativityRecord();prepareChapterMenu();by('book').showModal();by('book').scrollTop=0}
 by('menu').onclick=journal;by('resume').onclick=()=>by('book').close();
 by('restart').onclick=()=>{if(replaying)return;if(confirm('이 기기에서 보리의 여행을 처음부터 시작할까요?')){localStorage.removeItem('boriJourney');location.reload()}};
@@ -143,7 +143,7 @@ function earDown(){listen=prefs.toggle?!listen:true;updateMusicLevel(listen);nex
 function earUp(){if(!prefs.toggle){listen=false;updateMusicLevel(false)}}
 onkeydown=e=>{if(by('book').open)return;awaken();keys.add(e.code);if(!e.repeat){if(e.code==='KeyE')action();if(e.code==='KeyQ')earDown()}};
 onkeyup=e=>{keys.delete(e.code);if(e.code==='KeyQ')earUp()};
-onblur=()=>{keys.clear();listen=false;drag=false};
+onblur=()=>{keys.clear();resetLocomotion();listen=false;drag=false};
 renderer.domElement.onpointerdown=e=>{awaken();if(e.button===2)earDown();else drag=true;renderer.domElement.setPointerCapture(e.pointerId)};
 onpointerup=e=>{drag=false;if(e.button===2)earUp()};oncontextmenu=e=>e.preventDefault();
 onpointermove=e=>{if(drag){yaw+=e.movementX*.006;if(e.movementX)cameraInput()}};
@@ -155,7 +155,7 @@ function blocked(x,z){
  if(!save.drank&&fromTeacher<.53&&fromTeacher<distance(jesus.position.x,jesus.position.z))return true;
  if(save.drank&&(passingNeighborBlocks(marketSellerLane,x,z,sheep.position)||
                  passingNeighborBlocks(marketResidentLane,x,z,sheep.position)))return true;
- return walls.some(([cx,cz,w,d])=>Math.abs(x-cx)<w+.35&&Math.abs(z-cz)<d+.35)
+ return walls.some(([cx,cz,w,d])=>roundedWall(x,z,cx,cz,w,d))
 }
 const soundFacing=new T.Vector3();
 const handSoundPosition=new T.Vector3();
@@ -195,27 +195,24 @@ window.addEventListener('pagehide',stopScore);
 let prev=performance.now(),padA=false,padLT=false,padMoving=false;
 function loop(now){
  requestAnimationFrame(loop);const dt=T.MathUtils.clamp((now-prev)/1000,.00001,.05);prev=now;
- if(document.hidden||by('book').open){stopWorldAudio();playSceneMusic();return}
+ if(document.hidden||by('book').open){resetLocomotion();stopWorldAudio();playSceneMusic();return}
  clock+=dt;
  const pad=Array.from(navigator.getGamepads?.()||[]).find(Boolean),axis=i=>Math.abs(pad?.axes[i]||0)>.16?pad.axes[i]:0;
- const usingStick=Boolean(axis(0)||axis(1)||axis(2));
+ const stick=movementStick(pad?.axes[0]||0,pad?.axes[1]||0);
+ const usingStick=Boolean(stick[0]||stick[1]||axis(2));
  if(usingStick&&!padMoving)awaken();
  padMoving=usingStick;
  const a=!!pad?.buttons[0]?.pressed,lt=!!pad?.buttons[6]?.pressed;
  if(a&&!padA){awaken();action()}if(lt&&!padLT){awaken();earDown()}if(!lt&&padLT)earUp();padA=a;padLT=lt;
  yaw+=(Number(keys.has('ArrowRight'))-Number(keys.has('ArrowLeft'))+axis(2))*dt*1.9;
  if(keys.has('ArrowRight')||keys.has('ArrowLeft')||axis(2))cameraInput();
- let dx=Number(keys.has('KeyD'))-Number(keys.has('KeyA'))+axis(0),dz=Number(keys.has('KeyS'))-Number(keys.has('KeyW'))+axis(1);
- const norm=Math.max(1,Math.hypot(dx,dz)),speed=(listen?1.15:keys.has('ShiftLeft')||pad?.buttons[10]?.pressed?4.8:2.75)*dt;
- const vx=(dx*Math.cos(yaw)-dz*Math.sin(yaw))*speed/norm,vz=(dx*Math.sin(yaw)+dz*Math.cos(yaw))*speed/norm,p=sheep.position;
+ let dx=Number(keys.has('KeyD'))-Number(keys.has('KeyA'))+stick[0],dz=Number(keys.has('KeyS'))-Number(keys.has('KeyW'))+stick[1];
+ const speed=listen?1.15:keys.has('ShiftLeft')||keys.has('ShiftRight')||pad?.buttons[10]?.pressed?4.8:2.75;
+ const vx=dx*Math.cos(yaw)-dz*Math.sin(yaw),vz=dx*Math.sin(yaw)+dz*Math.cos(yaw),p=sheep.position;
  if(steppingAway(vx,vz)){waterMeeting=null;caption('예수님은 물을 담은 채 기다리신다.',3)}
  const lastX=p.x,lastZ=p.z;
- const move=(dx||dz)&&!waterMeeting&&(!save.prologue||nativityCanWalk())&&clock>=poseEnd&&sceneTime<0&&save.chapterStep!=='testimony'&&save.chapterStep!=='credits';
- if(move){
- if(!blocked(p.x+vx,p.z))p.x+=vx;
- if(!blocked(p.x,p.z+vz)&& (save.prologue||save.drank||p.z+vz>11))p.z+=vz;
- if(p.x!==lastX||p.z!==lastZ)sheep.rotation.y=Math.atan2(lastX-p.x,lastZ-p.z);
- }
+ const allowed=!waterMeeting&&(!save.prologue||nativityCanWalk())&&clock>=poseEnd&&sceneTime<0&&save.chapterStep!=='testimony'&&save.chapterStep!=='credits';
+ const move=moveBori(dt,vx,vz,speed,allowed);
  if(!listen)setDirectionCue('');
  if(save.prologue){updateNativity(dt,move);updateCast(dt);updateCharacterDialogue(dt);updateAtmosphere(dt);updateWorldAudio(dt);playSceneMusic();renderer.render(scene,camera);return}
  if(!save.chapterStep){updateWaterMeeting(dt);updateMarketTeacher(dt)}

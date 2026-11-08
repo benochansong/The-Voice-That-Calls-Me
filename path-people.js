@@ -39,7 +39,9 @@ function stepPassingNeighbor(n,dt,p){
   n.offsetX=(p.x<n.homeX?1:p.x>n.homeX?-1:n.preferredSide)*1.03;
   n.offsetZ=0;n.amount=1;n.phase='aside';
  }
- if(n.phase==='home'&&dist<3.15&&step>.0001){
+ const approachSpeed=step/dt;
+ const noticeRange=Math.min(4.2,Math.max(3.15,.65*approachSpeed+1));
+ if(n.phase==='home'&&dist<noticeRange&&step>.0001){
   const ux=vx/step,uz=vz/step,dx=n.homeX-p.x,dz=n.homeZ-p.z;
   if(dx*ux+dz*uz>0&&Math.abs(dx*uz-dz*ux)<1.05){
    choosePassingStep(n,p,ux,uz);n.phase='notice';n.time=0;n.away=0;
@@ -47,7 +49,7 @@ function stepPassingNeighbor(n,dt,p){
  }
  if(n.phase==='home')return false;
  n.time+=dt;
- if(n.phase==='notice'&&n.time>=.16){n.phase='opening';noticed=true}
+ if(n.phase==='notice'&&n.time>=.10){n.phase='opening';noticed=true}
  if(n.phase==='aside'){
   n.away=dist>3.75?n.away+dt:0;
   if(n.away>.6)n.phase='return';
@@ -56,7 +58,7 @@ function stepPassingNeighbor(n,dt,p){
  }
  const oldX=f.position.x,oldZ=f.position.z;
  if(n.phase==='opening'){
-  n.amount=Math.min(1,n.amount+dt/.60);
+  n.amount=Math.min(1,n.amount+dt/.46);
   if(n.amount===1)n.phase='aside';
  }else if(n.phase==='return'){
   n.amount=Math.max(0,n.amount-dt/.9);
@@ -73,7 +75,7 @@ function stepPassingNeighbor(n,dt,p){
  const rightX=Math.cos(f.rotation.y),rightZ=-Math.sin(f.rotation.y);
  const lateral=speed>.0001?(strideX*rightX+strideZ*rightZ)/speed:0;
  // Shift weight onto the planted foot before the first sandal lifts.
- const anticipation=n.phase==='notice'?Math.sin(Math.PI*n.time/.16):0;
+ const anticipation=n.phase==='notice'?Math.sin(Math.PI*n.time/.10):0;
  f.rotation.z=.035*anticipation*(n.offsetX*rightX+n.offsetZ*rightZ);
  n.gaze.set(p.x,p.y+.82,p.z);
  animatePerson(f,dt,{lookAt:n.phase==='return'?null:n.gaze,walk:speed,strideSide:lateral});

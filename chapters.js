@@ -60,6 +60,7 @@ const beats={
 const inCourt=()=>['bedside','recovery','aside','evening'].includes(save.chapterStep);
 let beatTime=0;
 function enterBeat(step,spawn){
+ resetLocomotion();
  if(chapterReplay&&chapterForStep(step)!==chapterReplay.chapter){restoreMainJournal();return}
  const changeSet=cameraSetKey(step)!==cameraSetKey(save.chapterStep);
  if(changeSet||spawn)startSceneDissolve();

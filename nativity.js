@@ -155,6 +155,7 @@ function startNativity(){
  checkpoint();
 }
 function nextNativity(step){
+ resetLocomotion();
  save.prologue=step;nativityTime=0;lastNativityLine=-1;listen=false;checkpoint();
 }
 function nativityAction(){
@@ -179,6 +180,7 @@ const nativityWords={
 };
 function restoreMainJournal(){history.replaceState(null,'',location.pathname+location.search);location.reload()}
 function finishNativity(){
+ resetLocomotion();
  startSceneDissolve();
  renderer.domElement.style.opacity='';
  if(prologuePreview){restoreMainJournal();return}

@@ -171,7 +171,7 @@ function buildBori(){
  }
  sphere.dispose();
  return {sheep,facing,trunk,head,eyes,ears,legs,shins,tail,boriMouthAnchor,
-  state:{heading:0,stride:0,activity:0,seat:0,rest:0,alert:0,elapsed:0}};
+  state:{heading:0,stride:0,activity:0,lean:0,bank:0,seat:0,rest:0,alert:0,elapsed:0}};
 }
 
 // Bearing uses the same convention as the sound compass: zero is world -Z,
@@ -185,20 +185,25 @@ function updateBori(dt,moving,pace,worldBearing,drinkProgress,sitting,resting=fa
  const attention=Number.isFinite(worldBearing);
  state.elapsed+=dt;
  state.rest+=((resting?1:0)-state.rest)*smooth(4.5);
- state.heading+=angular(sheep.rotation.y-state.heading)*smooth(sipping?22:13);
+ const headingDelta=angular(sheep.rotation.y-state.heading);
+ state.heading+=headingDelta*smooth(sipping?22:13);
  // Always align to the anchor during contact, even if Bori came from behind the hand.
  facing.rotation.y=angular(state.heading-sheep.rotation.y)*(1-dip);
  state.activity+=((moving?1:0)-state.activity)*smooth(moving?11:16);
  state.seat+=((sitting?1:0)-state.seat)*smooth(10);
  state.alert+=((attention?1:0)-state.alert)*smooth(attention?16:8);
  const speed=T.MathUtils.clamp(pace,0,5.5);
- state.stride+=dt*(4.8+speed*2.6)*state.activity;
+ // Stride follows ground travel, so braking and pushing into a wall do not
+ // keep cycling the hooves. Weight settles gently after the final step.
+ state.stride+=dt*speed*3.6;
+ state.lean+=(T.MathUtils.clamp(locomotion.acceleration*.004,-.07,.055)-state.lean)*smooth(9);
+ state.bank+=(T.MathUtils.clamp(headingDelta*speed*.025,-.07,.07)-state.bank)*smooth(10);
  const phase=state.stride,activity=state.activity*(1-dip);
  const breath=Math.sin(state.elapsed*2.1);
  trunk.position.y=(.006*breath+.032*activity*(.5-.5*Math.cos(2*phase))-.14*state.seat)*(1-dip);
  trunk.scale.x=1+.009*breath*(1-activity);
- trunk.rotation.x=(.035*Math.sin(phase)*activity-.11*state.seat)*(1-dip);
- trunk.rotation.z=.023*Math.sin(phase)*activity;
+ trunk.rotation.x=(.035*Math.sin(phase)*activity-.11*state.seat+state.lean*(1-state.seat))*(1-dip);
+ trunk.rotation.z=(.023*Math.sin(phase)*activity+state.bank)*(1-dip)*(1-state.seat);
  tail.rotation.z=.13*Math.sin(state.elapsed*2.6)+activity*.19*Math.sin(phase);
  tail.rotation.x=-.1-.15*state.alert;
  for(let i=0;i<legs.length;i++){

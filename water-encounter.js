@@ -25,6 +25,7 @@ function lookTowardWater(dt){
 }
 function beginWaterMeeting(){
  if(waterMeeting)return;
+ resetLocomotion();
  const start=sheep.position.clone(),hand=marketWaterTarget(waterMeetingHand);
  const end=new T.Vector3(hand.x,0,hand.z+.765);
  const side=start.x<hand.x? -1:1;
